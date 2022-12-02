@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreditApi", "credit-api\CreditApi.csproj", "{DCCA17D6-8FD1-4B29-8B52-748E0E04C1C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingProcessor", "booking-processor\BookingProcessor.csproj", "{9293C179-25DF-4A90-BFEC-7430A5E3D03B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+	
+		{DCCA17D6-8FD1-4B29-8B52-748E0E04C1C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCCA17D6-8FD1-4B29-8B52-748E0E04C1C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCCA17D6-8FD1-4B29-8B52-748E0E04C1C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCCA17D6-8FD1-4B29-8B52-748E0E04C1C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9293C179-25DF-4A90-BFEC-7430A5E3D03B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9293C179-25DF-4A90-BFEC-7430A5E3D03B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9293C179-25DF-4A90-BFEC-7430A5E3D03B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9293C179-25DF-4A90-BFEC-7430A5E3D03B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

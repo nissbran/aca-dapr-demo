@@ -1,0 +1,25 @@
+config:
+  target: "http://localhost:8081"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: Warm up
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 50
+      name: Ramp up load
+    - duration: 600
+      arrivalRate: 50
+      name: Sustained load
+  payload:
+    path: "values.csv"
+    fields:
+      - "value"
+
+scenarios:
+  - name: "Add transactions"
+    flow:
+      - post:
+          url: "/v1/credits/a81f9893-9694-4a6b-8bfc-8b98550af145/transactions"
+          json:
+            value: "{{ value }}"

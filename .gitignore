@@ -1,0 +1,28 @@
+# Tools
+.idea
+*.suo
+*.user
+*.sln.docstates
+*.sln.ide/
+*.userprefs
+*.GhostDoc.xml
+.vs
+
+# Outputs
+publish
+results
+
+# Build related
+tools
+
+# .NET
+[Bb]in/
+[Oo]bj/
+[Pp]ackages/
+
+# Apple directory
+.DS_Store
+
+# Terraform
+.terraform
+terraform.tfstate

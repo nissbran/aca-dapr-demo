@@ -1,0 +1,32 @@
+GET http://localhost:8081/v1/credits/123314
+
+###
+
+POST http://localhost:8081/v1/credits
+content-type: application/json
+
+{
+    "name": "test"
+}
+
+###
+
+POST http://localhost:8081/v1/credits/50df9295-bb6d-4c6b-a1c5-02f3fde7d8c7/transactions
+content-type: application/json
+
+{
+    "value": 34234
+}
+
+###
+
+POST http://localhost:8081/v1/credits/3e0a14fb-b189-45fd-b09e-a54df6229157/transactions
+content-type: application/json
+
+{
+    "value": 34234
+}
+
+###
+
+GET http://localhost:8081/v1/credits/f8ad60d4-9ade-49e3-b8ae-6256365b8f07/transactions

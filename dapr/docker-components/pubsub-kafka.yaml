@@ -1,0 +1,20 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  initTimeout: 30s
+  ignoreErrors: true
+  metadata:
+  - name: brokers # Required. Kafka broker connection setting
+    value: "kafka:29092"
+  - name: authType # Required.
+    value: "none"
+  - name: consumeRetryInterval # Optional.
+    value: 200ms
+  - name: disableTls # Optional. Disable TLS. This is not safe for production!! You should read the `Mutual TLS` section for how to use TLS.
+    value: "true"
+  - name: partitionCount
+    value: "30"

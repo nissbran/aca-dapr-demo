@@ -1,0 +1,19 @@
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: pubsub
+# spec:
+#   type: pubsub.azure.eventhubs
+#   version: v1
+#   metadata:
+#   - name: connectionString 
+#     value: "Endpoint=sb://{EventHubNamespace}.servicebus.windows.net/;SharedAccessKeyName={PolicyName};SharedAccessKey={Key}"
+#   - name: enableEntityManagement
+#     value: "false"
+#   ## Subscriber attributes -- used for subscription checkpoints
+#   - name: storageAccountName
+#     value: "account-name"
+#   - name: storageAccountKey
+#     value: "---"
+#   - name: storageContainerName
+#     value: "eventhub-subscriptions"

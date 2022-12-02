@@ -1,0 +1,167 @@
+services:
+
+## ---------------- GO
+  # credit-api:
+  #   image: ${DOCKER_REGISTRY-}go-credit-api
+  #   build:
+  #     context: src\go\credit-api
+  #   ports:
+  #     - 8081:8081
+  # credit-api-dapr:
+  #   image: daprio/daprd:edge
+  #   command: ["./daprd",
+  #    "-app-id", "credit-api",
+  #    "-app-port", "8081",
+  #    "-components-path", "./components"]   
+  #   volumes:
+  #     - "./dapr/docker-components/:/components"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     credit-api:
+  #       condition: service_started
+  #   network_mode: "service:credit-api"
+
+  # booking-processor-1:
+  #   image: ${DOCKER_REGISTRY-}go-booking-processor
+  #   build:
+  #     context: src\go\booking-processor
+  # booking-processor-dapr-1:
+  #   image: daprio/daprd:edge
+  #   command: ["./daprd",
+  #    "-app-id", "booking-processor",
+  #    "-app-port", "8080",
+  #    "-components-path", "./components"]   
+  #   volumes:
+  #     - "./dapr/docker-components/:/components"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     booking-processor-1:
+  #       condition: service_started
+  #   network_mode: "service:booking-processor-1"
+
+  # booking-processor-2:
+  #   image: ${DOCKER_REGISTRY-}go-booking-processor
+  #   build:
+  #     context: src\go\booking-processor
+  # booking-processor-dapr-2:
+  #   image: daprio/daprd:edge
+  #   command: ["./daprd",
+  #    "-app-id", "booking-processor",
+  #    "-app-port", "8080",
+  #    "-components-path", "./components"]   
+  #   volumes:
+  #     - "./dapr/docker-components/:/components"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     booking-processor-2:
+  #       condition: service_started
+  #   network_mode: "service:booking-processor-2"
+
+## ---------------- .NET
+  credit-api:
+    image: ${DOCKER_REGISTRY-}dotnet-credit-api
+    build:
+      context: src\dotnet\credit-api
+    ports:
+      - 8081:80
+  credit-api-dapr:
+    image: daprio/daprd:edge
+    command: ["./daprd",
+     "-app-id", "credit-api",
+     "-app-port", "80",
+     "-components-path", "./components"]   
+    volumes:
+      - "./dapr/docker-components/:/components"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      credit-api:
+        condition: service_started
+    network_mode: "service:credit-api"
+
+  booking-processor-1:
+    image: ${DOCKER_REGISTRY-}dotnet-booking-processor
+    build:
+      context: src\dotnet\booking-processor
+  booking-processor-dapr-1:
+    image: daprio/daprd:edge
+    command: ["./daprd",
+     "-app-id", "booking-processor",
+     "-app-port", "80",
+     "-components-path", "./components"]   
+    volumes:
+      - "./dapr/docker-components/:/components"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      booking-processor-1:
+        condition: service_started
+    network_mode: "service:booking-processor-1"
+
+  booking-processor-2:
+    image: ${DOCKER_REGISTRY-}dotnet-booking-processor
+    build:
+      context: src\dotnet\booking-processor
+  booking-processor-dapr-2:
+    image: daprio/daprd:edge
+    command: ["./daprd",
+     "-app-id", "booking-processor",
+     "-app-port", "80",
+     "-components-path", "./components"]   
+    volumes:
+      - "./dapr/docker-components/:/components"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      booking-processor-2:
+        condition: service_started
+    network_mode: "service:booking-processor-2"
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6380:6379
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.0
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.0
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+      - 9092:9092
+      - 9101:9101
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_NUM_PARTITIONS: 30
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "9092"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  kafka-drop:
+    image: obsidiandynamics/kafdrop:latest
+    depends_on:
+      - kafka
+    ports:
+      - 9000:9000
+    environment:
+      KAFKA_BROKERCONNECT: kafka:29092
+      JVM_OPTS: "-Xms32M -Xmx64M"
