@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -19,8 +21,15 @@ func startServerWithCleanShutdown(handler http.Handler) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	port, ok := os.LookupEnv("LISTENING_PORT")
+	if !ok {
+		port = "8081"
+	}
+
+	address := fmt.Sprintf(":%v", port)
+
 	srv := &http.Server{
-		Addr:    ":8081",
+		Addr:    address,
 		Handler: handler,
 	}
 

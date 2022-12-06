@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dapr/go-sdk/service/common"
@@ -20,11 +22,19 @@ var bookingSub = &common.Subscription{
 }
 
 func main() {
-	service := daprd.NewService(":8080")
+	port, ok := os.LookupEnv("LISTENING_PORT")
+	if !ok {
+		port = "8080"
+	}
+
+	address := fmt.Sprintf(":%v", port)
+	service := daprd.NewService(address)
 
 	if err := service.AddTopicEventHandler(bookingSub, eventHandler); err != nil {
 		log.Fatalf("error adding topic subscription: %v", err)
 	}
+
+	log.Println("Starting server on", address)
 
 	if err := service.Start(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server error: %v", err)

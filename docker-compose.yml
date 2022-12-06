@@ -86,6 +86,8 @@ services:
     image: ${DOCKER_REGISTRY-}dotnet-booking-processor
     build:
       context: src\dotnet\booking-processor
+    ports:
+      - 8080:80
   booking-processor-dapr-1:
     image: daprio/daprd:edge
     command: ["./daprd",
