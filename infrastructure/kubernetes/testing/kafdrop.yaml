@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: credits
+  name: kafdrop
+  labels:
+    app: kafdrop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafdrop
+  template:
+    metadata:
+      labels:
+        app: kafdrop
+    spec:
+      containers:
+      - name: kafdrop
+        image: obsidiandynamics/kafdrop:latest
+        ports:
+        - containerPort: 9000
+        env:
+        - name: JVM_OPTS
+          value: "-Xms32M -Xmx64M"
+        - name: KAFKA_BROKERCONNECT
+          value: "kafka.credits.svc.cluster.local:9092"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: credits
+  name: kafdrop
+  labels:
+    app: kafdrop
+spec:
+  selector:
+    app: kafdrop
+  ports:
+    - port: 9000
+      name: http

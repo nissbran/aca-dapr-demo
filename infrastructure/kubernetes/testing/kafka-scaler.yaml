@@ -1,0 +1,23 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  namespace: credits
+  name: kafka-keda-scaler
+spec:
+  scaleTargetRef:
+    name: booking-processor
+  pollingInterval: 30
+  cooldownPeriod: 30 # Default is 300. Set to 30 for testing purposes
+  minReplicaCount: 1
+  maxReplicaCount: 8
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka.credits.svc.cluster.local:9092
+      consumerGroup: booking-processor
+      topic: bookings
+      # Optional
+      lagThreshold: "50"
+      #offsetResetPolicy: earliest
+      #scaleToZeroOnInvalidOffset: "true"
+      

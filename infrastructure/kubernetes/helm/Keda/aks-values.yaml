@@ -1,0 +1,16 @@
+# Default values for keda. This config is used to install dapr in the AKS systempool
+tolerations: 
+- key: "CriticalAddonsOnly"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.azure.com/mode
+          operator: In
+          values:
+            - system

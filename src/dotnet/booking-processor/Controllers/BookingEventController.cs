@@ -24,7 +24,7 @@ public class BookingEventController : ControllerBase
         return Ok();
     }
 
-    [Topic("pubsub", "bookings", "event.data.type ==\"BookingEvent\"", 1)]
+    [Topic("pubsub", "bookings", "event.data.type ==\"BookingEvent\"", 2)]
     [HttpPost("bookings")]
     public async Task<IActionResult> HandleBooking(BookingEvent booking, DaprClient client)
     {
@@ -51,7 +51,7 @@ public class BookingEventController : ControllerBase
         return Ok();
     }
 
-    [Topic("pubsub", "bookings", "event.data.type ==\"CloseMonthEvent\"", 1)]
+    [Topic("pubsub", "bookings", "event.data.type ==\"CloseMonthEvent\"", 3)]
     [HttpPost("close-month")]
     public async Task<IActionResult> CloseMonth(CloseMonthEvent closeMonth, DaprClient client)
     {

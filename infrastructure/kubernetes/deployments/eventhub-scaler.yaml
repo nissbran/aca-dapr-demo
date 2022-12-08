@@ -1,0 +1,21 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  namespace: credits
+  name: eventhub-scaledobject
+spec:
+  scaleTargetRef:
+    name: booking-processor
+  pollingInterval: 30
+  cooldownPeriod: 30
+  minReplicaCount: 1
+  maxReplicaCount: 8
+  triggers:
+  - type: azure-eventhub
+    metadata:
+      connection: "Endpoint=sb://{EventHubNamespace}.servicebus.windows.net/;SharedAccessKeyName={PolicyName};SharedAccessKey={Key};EntityPath=bookings"
+      storageConnection: "DefaultEndpointsProtocol=https;AccountName={AccountName};AccountKey={Key};EndpointSuffix=core.windows.net"
+      consumerGroup: booking-processor       # Make sure that this consumer group name is the same one as the one that is consuming topics
+      checkpointStrategy: dapr
+      unprocessedEventThreshold: "50"

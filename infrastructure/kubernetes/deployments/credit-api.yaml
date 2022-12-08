@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: credits
+  name: credit-api
+  labels:
+    app: credit-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-api
+  template:
+    metadata:
+      labels:
+        app: credit-api
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "credit-api"
+        dapr.io/app-port: "80"
+    spec:
+      containers:
+      - name: credit-api
+        image: <registry>/credits/credit-api:0.1
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 250Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: credits
+  name: credit-api
+  labels:
+    app: credit-api
+spec:
+  selector:
+    app: credit-api
+  ports:
+    - port: 80
+      name: http

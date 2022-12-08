@@ -1,0 +1,59 @@
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: pubsub
+spec:
+  type: pubsub.azure.eventhubs
+  version: v1
+  metadata:
+  - name: connectionString 
+    value: "Endpoint=sb://{EventHubNamespace}.servicebus.windows.net/;SharedAccessKeyName={PolicyName};SharedAccessKey={Key}"  # Change this
+  - name: enableEntityManagement
+    value: "false"
+  ## Subscriber attributes -- used for subscription checkpoints
+  - name: storageAccountName
+    value: "account-name" # Change this
+  - name: storageAccountKey
+    value: "---"  # Change this
+  - name: storageContainerName
+    value: "eventhub-subscriptions"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: creditstore
+spec:
+  type: state.azure.cosmosdb
+  version: v1
+  metadata:
+  - name: url
+    value: "cosmos_uri"  # Change this
+  - name: masterKey
+    value: "key"  # Change this
+  - name: database
+    value: "credits"
+  - name: collection
+    value: "creditstore"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: bookingstore
+spec:
+  type: state.azure.cosmosdb
+  version: v1
+  metadata:
+  - name: url
+    value: "cosmos_uri"  # Change this
+  - name: masterKey
+    value: "key"  # Change this
+  - name: database
+    value: "credits"
+  - name: collection
+    value: "bookingstore"

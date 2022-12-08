@@ -1,0 +1,51 @@
+# For testing only. Should not be used for production
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  initTimeout: 30s
+  metadata:
+  - name: brokers # Required. Kafka broker connection setting
+    value: "kafka.credits.svc.cluster.local:9092"
+  - name: authType # Required.
+    value: "none"
+  - name: consumeRetryInterval # Optional.
+    value: 200ms
+  - name: disableTls # Optional. Disable TLS. This is not safe for production!! You should read the `Mutual TLS` section for how to use TLS.
+    value: "true"
+  - name: partitionCount
+    value: "30"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: bookingstore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis:6379
+  - name: redisPassword
+    value: ""
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  namespace: credits
+  name: creditstore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis:6379
+  - name: redisPassword
+    value: ""

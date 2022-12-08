@@ -1,0 +1,10 @@
+# Default values for dapr. This config is used to install dapr in the AKS systempool
+global:
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"

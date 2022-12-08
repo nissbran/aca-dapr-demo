@@ -1,0 +1,10 @@
+# This config is for testing only. This is a inmemory kafka for testing
+numPartitions: 30
+
+replicaCount: 1
+persistence:
+  enabled: false
+zookeeper:
+  replicaCount: 1
+  persistence:
+    enabled: false

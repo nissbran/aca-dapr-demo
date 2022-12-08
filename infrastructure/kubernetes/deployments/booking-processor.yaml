@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: credits
+  name: booking-processor
+  labels:
+    app: booking-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: booking-processor
+  template:
+    metadata:
+      labels:
+        app: booking-processor
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "booking-processor"
+        dapr.io/app-port: "80"
+    spec:
+      containers:
+      - name: booking-processor
+        image: <registry>/credits/booking-processor:0.1
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 250Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: credits
+  name: booking-processor
+  labels:
+    app: booking-processor
+spec:
+  selector:
+    app: booking-processor
+  ports:
+    - port: 80
+      name: http

@@ -1,0 +1,20 @@
+# Ingress used together with the HTTP Application Routing feature in AKS, not for production
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: credits
+  name: credit-api
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+  rules:
+  - host: credit-api.<Cluster dns>
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: credit-api
+            port: 
+              number: 80
