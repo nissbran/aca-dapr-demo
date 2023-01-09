@@ -306,7 +306,7 @@ resource credit_api 'Microsoft.App/containerApps@2022-03-01' = {
     template: {
       containers: [
         {
-          image: '${acr.name}.azurecr.io/credits/credit-api:1.0'
+          image: '${acr.name}.azurecr.io/credits/credit-api:0.1'
           name: 'credit-api'
         }
       ]
@@ -373,7 +373,7 @@ resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
     template: {
       containers: [
         {
-          image: '${acr.name}.azurecr.io/credits/booking-processor:1.0'
+          image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
           name: 'booking-processor'
         }
       ]

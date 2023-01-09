@@ -13,14 +13,6 @@ import (
 	daprd "github.com/dapr/go-sdk/service/http"
 )
 
-var bookingSub = &common.Subscription{
-	PubsubName: "pubsub",
-	Topic:      "bookings",
-	Route:      "/booking",
-	Match:      `event.data.type == "BookingEvent"`,
-	Priority:   1,
-}
-
 func main() {
 	port, ok := os.LookupEnv("LISTENING_PORT")
 	if !ok {

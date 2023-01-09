@@ -38,7 +38,7 @@ public class BookingEventController : ControllerBase
 
         if (bookingMonth.Closed)
         {
-            Log.Error("Tried to add transaction to closed month {%Booking}", booking);
+            Log.Error("Tried to add transaction to closed month {@Booking}", booking);
         }
         else
         {
@@ -57,18 +57,14 @@ public class BookingEventController : ControllerBase
     {
         await Task.Delay(new Random().Next(500, 2000));
         
-        var bookingMonth = await client.GetStateAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}");
+        var bookingMonth = await client.GetStateAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}") ??
+                           new BookingMonth(closeMonth.Month);
 
-        if (bookingMonth == null)
-        {
-            bookingMonth = new BookingMonth(closeMonth.Month)
-            {
-                Closed = true
-            };
-        }
+        bookingMonth.Closed = true;
 
         Log.Information("Closed month - {Id} -- Month: {Month} -- Sum: {Sum}", 
             closeMonth.CreditId, bookingMonth.Month, bookingMonth.Total);
+        await client.SaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}", bookingMonth);
         return Ok();
     }
 }
