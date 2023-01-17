@@ -40,7 +40,7 @@ resource aks_uai_mio_rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   }
 }
 
-resource aks 'Microsoft.ContainerService/managedClusters@2022-07-02-preview' = {
+resource aks 'Microsoft.ContainerService/managedClusters@2022-10-02-preview' = {
   name: 'aks-${name}'
   location: location
   identity: {

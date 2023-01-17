@@ -55,6 +55,16 @@ kubectl create namespace dapr-system
 helm install dapr dapr/dapr --namespace dapr-system -f helm/Dapr/aks-values.yaml
 ```
 
+Install ArgoCD. **Omit the aks-values.yaml if you don´t want AKS specific configuration**
+
+```cmd
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+kubectl create namespace argocd
+helm install argocd argo/argo-cd --namespace argocd -f helm/ArgoCD/aks-values.yml
+```
+
 # Deploy the infrastructure
 
 This section contains the guide to install the application specific infrastructure.

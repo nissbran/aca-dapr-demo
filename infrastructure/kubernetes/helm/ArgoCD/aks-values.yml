@@ -1,0 +1,70 @@
+crds:
+  install: false
+
+redis:
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
+
+dex:
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
+    
+controller:
+  replicas: 1
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
+
+applicationSet:
+  replicaCount: 2
+  tolerations: 
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  nodeSelector: 
+    kubernetes.azure.com/mode: "system"
