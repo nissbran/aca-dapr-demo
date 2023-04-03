@@ -12,7 +12,7 @@ az extension add --name containerapp
 
 First create an resource group (change location and name if you wish):
 ```cmd
-az group create -l northeurope -n rg-aca-dapr-demo
+az group create -l norwayeast -n rg-aca-dapr-demo
 ```
 
 Deploy the Container Registry. **Choose a unique name for the name parameter (only text without special signs and space, some resources are global unique and will create a uri)**

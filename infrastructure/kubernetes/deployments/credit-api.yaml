@@ -16,6 +16,7 @@ spec:
       labels:
         app: credit-api
       annotations:
+        prometheus.io/scrape: "true"
         dapr.io/enabled: "true"
         dapr.io/app-id: "credit-api"
         dapr.io/app-port: "80"

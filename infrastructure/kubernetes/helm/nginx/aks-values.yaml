@@ -1,0 +1,36 @@
+
+nameOverride: "ingress-nginx"
+
+controller:
+  replicaCount: 2
+  service:
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"
+  nodeSelector:
+    kubernetes.azure.com/mode: "system"
+  tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+  admissionWebhooks:
+    patch:
+      nodeSelector:
+        kubernetes.azure.com/mode: "system"
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+defaultBackend:
+  enabled: true
+  nodeSelector:
+    kubernetes.azure.com/mode: "system"
+  tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+

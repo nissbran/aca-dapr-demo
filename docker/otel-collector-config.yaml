@@ -1,0 +1,42 @@
+receivers:
+  zipkin:
+    endpoint: 0.0.0.0:9411
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'booking-processes'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['booking-processor-1:80', 'booking-processor-2:80']
+      - job_name: 'credit-api'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['credit-api:80']
+      - job_name: 'kafka'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['kafka-exporter:9308']
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+exporters:
+  logging:
+  #  verbosity: detailed
+  azuremonitor:
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    instrumentation_key: "<insert key>"
+  zipkin:
+    endpoint: "http://zipkin:9411/api/v2/spans"
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [zipkin]
+      exporters: [logging,zipkin,azuremonitor]
+    metrics:
+      receivers: [prometheus]
+      exporters: [logging,azuremonitor]
+  

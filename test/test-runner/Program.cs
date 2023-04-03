@@ -4,9 +4,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-var localCreditApi = "http://localhost:8081";
-var localBooking = "http://localhost:8080";
 var azure = "inserturi";
+var localCreditApi = "http://localhost:5010";
+var localBooking = "http://localhost:5011";
 var client = new HttpClient() { BaseAddress = new Uri(azure) };
 var tasks = new Task[10];
 var creditIds = new ConcurrentBag<string>();
@@ -46,6 +46,9 @@ for (int i = 0; i < 10; i++)
                         Value = 10,
                         TransactionDate = $"2022-{k+1:00}-{l+1:00}"
                     });
+
+                    //await Task.Delay(1000);
+                    //await Task.Delay(Random.Shared.Next(1000, 10000));
                 }
 
                 var closeCreditResponse = await client.PutAsJsonAsync($"{location}/close-month", new { });

@@ -1,4 +1,5 @@
 ﻿using Carter;
+using CreditApi.Telemetry;
 using Dapr.Client;
 using Serilog;
 
@@ -38,6 +39,8 @@ public class CreditModule : ICarterModule
         {
             { "partitionKey", newCredit.Id }
         });
+        
+        CreditsChangedMeter.CreditsCreatedCounter.Add(1);
         return TypedResults.Created($"v1/credits/{newCredit.Id}", new
         {
             CreditId = newCredit.Id
@@ -67,6 +70,8 @@ public class CreditModule : ICarterModule
         {
             foreach (var transaction in credit.NewTransactions)
             {
+                CreditsChangedMeter.CreditsTransactionValueAdded.Add(transaction.Value);
+
                 Log.Information("Sent booking message");
                 var booking = new BookingEvent(credit.Id, transaction.Value,
                     transaction.TransactionDate.ToString("yyyy-MM-dd"), etag);

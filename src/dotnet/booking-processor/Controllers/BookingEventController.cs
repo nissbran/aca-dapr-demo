@@ -1,4 +1,5 @@
 ﻿using BookingProcessor.Contract;
+using BookingProcessor.Telemetry;
 using Dapr;
 using Dapr.Client;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,8 @@ public class BookingEventController : ControllerBase
         await Task.Delay(new Random().Next(1000, 2000));
 
         await client.SaveStateAsync(StateStore, $"{startBooking.CreditId}-{1}", new BookingMonth(1));
+        
+        EventConsumedMeter.StartBookingCounter.Add(1);
         
         return Ok();
     }
@@ -47,6 +50,8 @@ public class BookingEventController : ControllerBase
 
         await client.SaveStateAsync(StateStore, $"{booking.CreditId}-{month}", bookingMonth);
 
+        EventConsumedMeter.BookingCounter.Add(1);
+        
         Log.Information("Processed    - {Id} -- tag: {ETag}", booking.CreditId, booking.ETag);
         return Ok();
     }
@@ -65,6 +70,9 @@ public class BookingEventController : ControllerBase
         Log.Information("Closed month - {Id} -- Month: {Month} -- Sum: {Sum}", 
             closeMonth.CreditId, bookingMonth.Month, bookingMonth.Total);
         await client.SaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}", bookingMonth);
+        
+        EventConsumedMeter.ClosedMonthCounter.Add(1);
+        
         return Ok();
     }
 }

@@ -12,6 +12,9 @@
 publish
 results
 
+# Docker env
+.env
+
 # Build related
 tools
 

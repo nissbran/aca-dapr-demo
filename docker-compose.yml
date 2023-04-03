@@ -66,13 +66,17 @@ services:
     build:
       context: src\dotnet\credit-api
     ports:
-      - 8081:80
+      - 5010:80
+    environment:
+      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
+      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
   credit-api-dapr:
-    image: daprio/daprd:edge
+    image: daprio/daprd:1.10.4
     command: ["./daprd",
      "-app-id", "credit-api",
      "-app-port", "80",
-     "-components-path", "./components"]   
+     "-components-path", "./components",
+     "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
@@ -87,13 +91,17 @@ services:
     build:
       context: src\dotnet\booking-processor
     ports:
-      - 8080:80
+      - 5011:80
+    environment:
+      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
+      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
   booking-processor-dapr-1:
-    image: daprio/daprd:edge
+    image: daprio/daprd:1.10.4
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "80",
-     "-components-path", "./components"]   
+     "-components-path", "./components",
+     "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
@@ -107,12 +115,18 @@ services:
     image: ${DOCKER_REGISTRY-}dotnet-booking-processor
     build:
       context: src\dotnet\booking-processor
+    ports:
+      - 5012:80
+    environment:
+      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
+      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
   booking-processor-dapr-2:
-    image: daprio/daprd:edge
+    image: daprio/daprd:1.10.4
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "80",
-     "-components-path", "./components"]   
+     "-components-path", "./components",
+     "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
@@ -157,7 +171,15 @@ services:
       interval: 2s
       timeout: 2s
       retries: 15
-
+      
+  kafka-exporter:
+    image: bitnami/kafka-exporter:1.6.0
+    restart: unless-stopped
+    command: --kafka.server=kafka:29092 --zookeeper.server=zookeeper:2181 #--log.enable-sarama #--concurrent.enable #--verbosity=2
+    depends_on:
+      kafka:
+        condition: service_healthy
+  
   kafka-drop:
     image: obsidiandynamics/kafdrop:latest
     depends_on:
@@ -167,3 +189,17 @@ services:
     environment:
       KAFKA_BROKERCONNECT: kafka:29092
       JVM_OPTS: "-Xms32M -Xmx64M"
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    ports:
+      - 9412:9411
+    environment:
+      JAVA_OPTS: '-Xms1g -Xmx1g -XX:+ExitOnOutOfMemoryError'
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.74.0
+    command: ["--config=conf/config.yaml"]
+    volumes:
+      - ./docker/otel-collector-config.yaml:/conf/config.yaml
+

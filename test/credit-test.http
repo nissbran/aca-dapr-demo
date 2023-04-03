@@ -1,18 +1,21 @@
-GET http://localhost:8081/v1/credits/123314
+GET http://localhost:5010/v1/credits/123314
+
+### 
+GET http://localhost:5011/metrics
 
 ###
 
-POST http://localhost:8081/v1/credits
+POST http://localhost:5010/v1/credits
 content-type: application/json
 
 {
     "name": "test",
-    "startDate": "2022-01-01"
+    "startDate": "2023-01-01"
 }
 
 ###
 
-POST http://localhost:8081/v1/credits/6c73ffc0-47ae-4650-b939-0537a7870a61/transactions
+POST http://localhost:5010/v1/credits/6c73ffc0-47ae-4650-b939-0537a7870a61/transactions
 content-type: application/json
 
 {
@@ -22,7 +25,7 @@ content-type: application/json
 
 ###
 
-PUT http://localhost:8081/v1/credits/71e20aff-ce75-4d39-8557-674689bc8deb/close-month
+PUT http://localhost:5010/v1/credits/71e20aff-ce75-4d39-8557-674689bc8deb/close-month
 content-type: application/json
 
 {
@@ -30,7 +33,7 @@ content-type: application/json
 
 ###
 
-POST http://localhost:8081/v1/credits/8d840d17-da9d-4b35-b289-9315f33755ba/transactions
+POST http://localhost:5010/v1/credits/8d840d17-da9d-4b35-b289-9315f33755ba/transactions
 content-type: application/json
 
 {
@@ -39,5 +42,5 @@ content-type: application/json
 }
 ###
 
-GET http://localhost:8081/v1/credits/f8ad60d4-9ade-49e3-b8ae-6256365b8f07/transactions
+GET http://localhost:5010/v1/credits/f8ad60d4-9ade-49e3-b8ae-6256365b8f07/transactions
 

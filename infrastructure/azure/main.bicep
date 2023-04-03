@@ -2,26 +2,13 @@ param name string
 param location string = resourceGroup().location
 
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+var monitoringReader = resourceId('Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')
 
-resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existing = {
+resource acr 'Microsoft.ContainerRegistry/registries@2021-09-01' existing = {
   name: 'acr${name}'
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
-  name: 'sto${name}'
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-  properties: {
-    minimumTlsVersion: 'TLS1_2'
-    supportsHttpsTrafficOnly: true
-    accessTier: 'Hot'
-  }
-}
-
-resource loganalytics_workspace 'Microsoft.OperationalInsights/workspaces@2020-08-01' = {
+resource loganalytics_workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: 'logs${name}'
   location: location
   properties: {
@@ -49,8 +36,27 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
+  name: 'stoacc${name}'
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+    accessTier: 'Hot'
+  }
+}
+resource fileShare 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
 resource eventHubNs 'Microsoft.EventHub/namespaces@2021-11-01' = {
-  name: 'eventhub${name}ns'
+  name: 'eventhubns${name}'
   location: location
   sku: {
     name: 'Standard'
@@ -84,6 +90,7 @@ resource eventHubSharedKey 'Microsoft.EventHub/namespaces/authorizationRules@202
     rights: [ 'Send', 'Listen', 'Manage' ]
   }
 }
+
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
   name: 'cosmos${name}'
@@ -203,7 +210,7 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
   properties: {
     componentType: 'state.azure.cosmosdb'
     version: 'v1'
-    initTimeout: '30s'
+    initTimeout: '5m'
     metadata: [
       {
         name: 'url'
@@ -234,7 +241,7 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
   properties: {
     componentType: 'state.azure.cosmosdb'
     version: 'v1'
-    initTimeout: '30s'
+    initTimeout: '5m'
     metadata: [
       {
         name: 'url'
@@ -308,6 +315,12 @@ resource credit_api 'Microsoft.App/containerApps@2022-03-01' = {
         {
           image: '${acr.name}.azurecr.io/credits/credit-api:0.1'
           name: 'credit-api'
+          env: [
+            {
+              name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+              value: appinsights.properties.ConnectionString
+            }
+          ]
         }
       ]
       scale: {
@@ -375,11 +388,17 @@ resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
         {
           image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
           name: 'booking-processor'
+          env: [
+            {
+              name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+              value: appinsights.properties.ConnectionString
+            }
+          ]
         }
       ]
       scale: {
         minReplicas: 1
-        maxReplicas: 2
+        maxReplicas: 4
         rules: [
           {
             name: 'eventhub-scale-rule'
@@ -398,7 +417,7 @@ resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
               metadata: {
                 consumerGroup: 'booking-processor'
                 unprocessedEventThreshold: '64'
-                checkpointStrategy: 'dapr' // KEDA 2.9 feature
+                checkpointStrategy: 'blobMetadata'
                 blobContainer: 'eventhub-subscriptions'
               }
             }

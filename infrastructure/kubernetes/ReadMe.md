@@ -31,7 +31,7 @@ az deployment group create -g rg-aks-dapr-demo --template-file aks.bicep --param
 
 ## Deploying extensions to Kubernetes
 
-This the guid how to install the required extensions to kubernetes; KEDA and Dapr
+This the guid how to install the required extensions to kubernetes
 
 Connect to your kubeneters cluster.
 
@@ -55,14 +55,24 @@ kubectl create namespace dapr-system
 helm install dapr dapr/dapr --namespace dapr-system -f helm/Dapr/aks-values.yaml
 ```
 
-Install ArgoCD. **Omit the aks-values.yaml if you don´t want AKS specific configuration**
+Install Nginx Ingress controller. **Omit the aks-values.yaml if you don´t want AKS specific configuration**
+
+```cmd
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+kubectl create namespace ingress
+helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress -f helm/nginx/aks-values.yaml
+```
+
+Install ArgoCD controller. **Omit the aks-values.yaml if you don´t want AKS specific configuration**
 
 ```cmd
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 
 kubectl create namespace argocd
-helm install argocd argo/argo-cd --namespace argocd -f helm/ArgoCD/aks-values.yml
+helm install argocd argo/argo-cd --namespace argocd -f helm/ArgoCD/aks-values.yaml
 ```
 
 # Deploy the infrastructure
