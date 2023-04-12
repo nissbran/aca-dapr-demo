@@ -1,4 +1,8 @@
 receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
   zipkin:
     endpoint: 0.0.0.0:9411
   prometheus:
@@ -30,13 +34,15 @@ exporters:
     instrumentation_key: "<insert key>"
   zipkin:
     endpoint: "http://zipkin:9411/api/v2/spans"
+  prometheusremotewrite:
+    endpoint: "http://otel-prom-remote-write:8081/api/v1/write"
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
-      receivers: [zipkin]
+      receivers: [zipkin, otlp]
       exporters: [logging,zipkin,azuremonitor]
     metrics:
       receivers: [prometheus]
-      exporters: [logging,azuremonitor]
+      exporters: [logging,azuremonitor, prometheusremotewrite]
   

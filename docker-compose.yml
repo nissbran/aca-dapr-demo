@@ -70,6 +70,7 @@ services:
     environment:
       APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
       OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   credit-api-dapr:
     image: daprio/daprd:1.10.4
     command: ["./daprd",
@@ -95,6 +96,7 @@ services:
     environment:
       APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
       OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   booking-processor-dapr-1:
     image: daprio/daprd:1.10.4
     command: ["./daprd",
@@ -120,6 +122,7 @@ services:
     environment:
       APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
       OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   booking-processor-dapr-2:
     image: daprio/daprd:1.10.4
     command: ["./daprd",
@@ -135,6 +138,29 @@ services:
       booking-processor-2:
         condition: service_started
     network_mode: "service:booking-processor-2"
+
+  interest-rate-api:
+    image: ${DOCKER_REGISTRY-}go-interest-rate-api
+    build:
+      context: src\go\interest-rate-api
+    environment:
+      SERVICE_NAME: interest-rate-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'otel-collector:4317'
+      INSECURE_MODE: true
+  interest-rate-api-dapr:
+    image: daprio/daprd:edge
+    command: ["./daprd",
+     "-app-id", "interest-rate-api",
+     "-app-port", "80",
+     "-components-path", "./components"]   
+    volumes:
+      - "./dapr/docker-components/:/components"
+    depends_on:
+      interest-rate-api:
+        condition: service_started
+    network_mode: "service:interest-rate-api"
+
+## ----------------- Infra
 
   redis:
     image: redis:latest
@@ -203,3 +229,15 @@ services:
     volumes:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
 
+  otel-prom-remote-write:
+    image: mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20221103.1
+    environment:
+      INGESTION_URL: ${AZURE_MONITOR_INGESTION_URL}
+      LISTENING_PORT: 8081
+      IDENTITY_TYPE: aadApplication
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+      AZURE_CLIENT_CERTIFICATE_PATH: /certs/pfxcert.pfx
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      CLUSTER: 'ACA'
+    volumes:
+      - ./certs/pfxcert.pfx:/certs/pfxcert.pfx

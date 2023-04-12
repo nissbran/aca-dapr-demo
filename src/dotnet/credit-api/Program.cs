@@ -21,8 +21,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
     configuration
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()
-        .WriteTo.Console(theme: AnsiConsoleTheme.Sixteen));
-        //.WriteTo.ApplicationInsights(services.GetRequiredService<TelemetryConfiguration>(), new CustomTraceTelemetryConverter()));
+        .WriteTo.Console(theme: AnsiConsoleTheme.Sixteen)
+        .WriteTo.ApplicationInsights(services.GetRequiredService<TelemetryConfiguration>(), new CustomTraceTelemetryConverter()));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -36,14 +36,16 @@ builder.Services.AddOpenTelemetry()
             //.AddConsoleExporter()
             // .AddAzureMonitorTraceExporter(options =>
             // {
-            //     options.ConnectionString = Environment.GetEnvironmentVariable("APPLICATION_INSIGHTS_CONNECTION_STRING");
+            //     options.ConnectionString =
+            //         Environment.GetEnvironmentVariable("APPLICATION_INSIGHTS_CONNECTION_STRING");
             // })
             //.AddZipkinExporter()
+            .AddOtlpExporter()
             .AddSource("credit-api")
             .SetResourceBuilder(ResourceBuilder.CreateDefault()
-                .AddService(serviceName: "credit-api", serviceVersion: "0.1"));
-        // .AddHttpClientInstrumentation()
-        // .AddAspNetCoreInstrumentation();
+                .AddService(serviceName: "credit-api", serviceVersion: "0.1"))
+            .AddHttpClientInstrumentation()
+            .AddAspNetCoreInstrumentation(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/metrics"));
     })
     .WithMetrics(metricsBuilder =>
     {
@@ -51,15 +53,16 @@ builder.Services.AddOpenTelemetry()
             //.AddConsoleExporter()
             // .AddAzureMonitorMetricExporter(options =>
             // {
-            //     options.ConnectionString = Environment.GetEnvironmentVariable("APPLICATION_INSIGHTS_CONNECTION_STRING");
+            //     options.ConnectionString =
+            //         Environment.GetEnvironmentVariable("APPLICATION_INSIGHTS_CONNECTION_STRING");
             // })
             .AddPrometheusExporter()
             .AddMeter("credit-api")
             .SetResourceBuilder(ResourceBuilder.CreateDefault()
-                .AddService(serviceName: "credit-api", serviceVersion: "0.1"));
-        // .AddHttpClientInstrumentation()
+                .AddService(serviceName: "credit-api", serviceVersion: "0.1"))
+            .AddHttpClientInstrumentation()
+            .AddAspNetCoreInstrumentation();
         // .AddRuntimeInstrumentation()
-        // .AddAspNetCoreInstrumentation();
     });
 
 var app = builder.Build();

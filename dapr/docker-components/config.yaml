@@ -6,5 +6,10 @@ metadata:
 spec:
   tracing:
     samplingRate: "1"
-    zipkin:
-      endpointAddress: "http://otel-collector:9411/api/v2/spans"
+    stdout: true
+    otel:
+      endpointAddress: "otel-collector:4317"
+      isSecure: false
+      protocol: "grpc"
+    # zipkin:
+    #   endpointAddress: "http://otel-collector:9411/api/v2/spans"

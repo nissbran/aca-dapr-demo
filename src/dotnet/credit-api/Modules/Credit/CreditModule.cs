@@ -23,10 +23,13 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client)
     {
+        var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
+        
         var newCredit = new Credit
         {
             Id = Guid.NewGuid().ToString(),
             Name = request.Name,
+            InterestRate = interestRateResponse.InterestRate,
             CurrentMonth = DateOnly.ParseExact(request.StartDate, "yyyy-MM-dd")
         };
 

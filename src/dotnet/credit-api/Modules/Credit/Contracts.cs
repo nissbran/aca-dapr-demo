@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace CreditApi.Modules.Credit;
 
@@ -19,4 +20,11 @@ public class AddTransactionRequest
 public class GetTransactionsResponse
 {
     public int Count { get; set; }
+}
+
+
+public class GetInterestRateResponse
+{
+    [JsonPropertyName("interest_rate")]
+    public decimal InterestRate { get; set; }
 }
