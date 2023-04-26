@@ -1,0 +1,44 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      #grpc:
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+processors:
+  attributes:
+    actions:
+      - key: environment
+        value: "ACA-DEV"
+        action: insert
+      - key: cluster
+        value: $CONTAINER_APP_ENV_DNS_SUFFIX
+        action: insert
+exporters:
+  logging:
+  #  verbosity: detailed
+  azuremonitor:
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    instrumentation_key: $APPLICATION_INSIGHTS_INSTRUMENTATION_KEY
+  prometheusremotewrite:
+    endpoint: "http://localhost:8081/api/v1/write"
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [logging,azuremonitor]
+    metrics:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [logging,azuremonitor]
+    logs:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [logging,azuremonitor]
+  

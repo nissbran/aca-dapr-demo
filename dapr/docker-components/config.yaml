@@ -6,7 +6,7 @@ metadata:
 spec:
   tracing:
     samplingRate: "1"
-    stdout: true
+    stdout: false
     otel:
       endpointAddress: "otel-collector:4317"
       isSecure: false

@@ -6,7 +6,7 @@ public class Credit
 {
     public string Id { get; init; }
     public string Name { get; init; }
-    public decimal InterestRate { get; init; }
+    public decimal InterestRate { get; init; } = 0.33m;
     public DateOnly CurrentMonth { get; set; }
     public ICollection<Transaction> Transactions { get; init; } = new List<Transaction>();
     [JsonIgnore]

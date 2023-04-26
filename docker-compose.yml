@@ -224,8 +224,10 @@ services:
       JAVA_OPTS: '-Xms1g -Xmx1g -XX:+ExitOnOutOfMemoryError'
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.74.0
+    image: otel/opentelemetry-collector-contrib:0.75.0
     command: ["--config=conf/config.yaml"]
+    environment:
+      - APPLICATION_INSIGHTS_INSTRUMENTATION_KEY=${APPLICATION_INSIGHTS_INSTRUMENTATION_KEY}
     volumes:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
 

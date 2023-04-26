@@ -15,7 +15,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existin
   name: acrname
 }
 
-resource aks_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+resource aks_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'uai-aks-${name}'
   location: location
 }
@@ -40,7 +40,7 @@ resource aks_uai_mio_rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   }
 }
 
-resource aks 'Microsoft.ContainerService/managedClusters@2022-10-02-preview' = {
+resource aks 'Microsoft.ContainerService/managedClusters@2023-02-01' = {
   name: 'aks-${name}'
   location: location
   identity: {

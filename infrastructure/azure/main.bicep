@@ -16,11 +16,6 @@ resource loganalytics_workspace 'Microsoft.OperationalInsights/workspaces@2022-1
       name: 'PerGB2018'
     }
     retentionInDays: 30
-    features: {
-      searchVersion: 1
-      legacy: 0
-      enableLogAccessUsingOnlyResourcePermissions: true
-    }
   }
 }
 
@@ -36,7 +31,6 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
   name: 'stoacc${name}'
   location: location
@@ -50,7 +44,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
     accessTier: 'Hot'
   }
 }
-resource fileShare 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = {
+
+resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = {
   parent: storageAccount
   name: 'default'
 }
@@ -78,7 +73,7 @@ resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2021-11-01' = {
   }
 }
 
-resource eventHubConsumerBookingProcessor 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2022-01-01-preview' = {
+resource eventHubConsumerBookingProcessor 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2021-11-01' = {
   parent: eventHub
   name: 'booking-processor'
 }
@@ -92,7 +87,7 @@ resource eventHubSharedKey 'Microsoft.EventHub/namespaces/authorizationRules@202
 }
 
 
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
   name: 'cosmos${name}'
   location: location
   kind: 'GlobalDocumentDB'
@@ -116,7 +111,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
   }
 }
 
-resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-08-15' = {
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-11-15' = {
   parent: cosmos
   name: 'credits'
   properties: {
@@ -126,7 +121,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-08-15
   }
 }
 
-resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-08-15' = {
+resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
   parent: database
   name: 'creditstore'
   properties: {
@@ -142,7 +137,7 @@ resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contain
   }
 }
 
-resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-08-15' = {
+resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
   parent: database
   name: 'bookingstore'
   properties: {
@@ -158,7 +153,7 @@ resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contai
   }
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2022-06-01-preview' = {
+resource aca_env 'Microsoft.App/managedEnvironments@2022-10-01' = {
   name: 'acaenv${name}'
   location: location
   properties: {
@@ -169,11 +164,12 @@ resource aca_env 'Microsoft.App/managedEnvironments@2022-06-01-preview' = {
         sharedKey: loganalytics_workspace.listKeys().primarySharedKey
       }
     }
+    daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
     daprAIConnectionString: appinsights.properties.ConnectionString
   }
 }
 
-resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022-06-01-preview' = {
+resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
   name: 'pubsub'
   parent: aca_env
   properties: {
@@ -204,7 +200,7 @@ resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022
   }
 }
 
-resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-06-01-preview' = {
+resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
   name: 'creditstore'
   parent: aca_env
   properties: {
@@ -235,7 +231,7 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
   }
 }
 
-resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-06-01-preview' = {
+resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
   name: 'bookingstore'
   parent: aca_env
   properties: {
@@ -268,7 +264,7 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
 
 // Credit api
 
-resource credit_api_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+resource credit_api_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'id-credit-api'
   location: location
 }
@@ -282,7 +278,7 @@ resource credit_api_uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01'
   }
 }
 
-resource credit_api 'Microsoft.App/containerApps@2022-03-01' = {
+resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
   name: 'credit-api'
   location: location
   identity: {
@@ -316,9 +312,17 @@ resource credit_api 'Microsoft.App/containerApps@2022-03-01' = {
           image: '${acr.name}.azurecr.io/credits/credit-api:0.1'
           name: 'credit-api'
           env: [
+            // {
+            //   name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+            //   value: appinsights.properties.ConnectionString
+            // }
             {
-              name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
-              value: appinsights.properties.ConnectionString
+              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
+              value: 'http://otel-collector-app'
+            }
+            {
+              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
+              value: 'http/protobuf'
             }
           ]
         }
@@ -334,7 +338,7 @@ resource credit_api 'Microsoft.App/containerApps@2022-03-01' = {
 
 // Booking processor
 
-resource booking_processor_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+resource booking_processor_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'id-booking-processor'
   location: location
 }
@@ -348,7 +352,7 @@ resource booking_processor_uaiRbac 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
+resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
   name: 'booking-processor'
   location: location
   identity: {
@@ -389,9 +393,17 @@ resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
           image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
           name: 'booking-processor'
           env: [
+            // {
+            //   name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+            //   value: appinsights.properties.ConnectionString
+            // }
             {
-              name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
-              value: appinsights.properties.ConnectionString
+              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
+              value: 'http://otel-collector-app'
+            }
+            {
+              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
+              value: 'http/protobuf'
             }
           ]
         }
@@ -427,3 +439,58 @@ resource booking_processor 'Microsoft.App/containerApps@2022-03-01' = {
     }
   }
 }
+
+
+// resource interest_rate_api 'Microsoft.App/containerApps@2022-10-01' = {
+//   name: 'interest-rate-api'
+//   location: location
+//   identity: {
+//     type: 'UserAssigned'
+//     userAssignedIdentities: {
+//       '${booking_processor_uai.id}': {}
+//     }
+//   }
+//   properties: {
+//     managedEnvironmentId: aca_env.id
+//     configuration: {
+//       activeRevisionsMode: 'single'
+//       dapr: {
+//         appId: 'interest-rate-api'
+//         appPort: 80
+//         enabled: true
+//       }
+//       registries: [
+//         {
+//           identity: booking_processor_uai.id
+//           server: acr.properties.loginServer
+//         }
+//       ]
+//     }
+//     template: {
+//       containers: [
+//         {
+//           image: '${acr.name}.azurecr.io/credits/interest-rate-api:0.1'
+//           name: 'interest-rate-api'
+//           env: [
+//             {
+//               name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+//               value: appinsights.properties.ConnectionString
+//             }
+//             {
+//               name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
+//               value: 'otel-collector-app'
+//             }
+//             {
+//               name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
+//               value: 'http/protobuf'
+//             }
+//           ]
+//         }
+//       ]
+//       scale: {
+//         minReplicas: 1
+//         maxReplicas: 1
+//       }
+//     }
+//   }
+// }

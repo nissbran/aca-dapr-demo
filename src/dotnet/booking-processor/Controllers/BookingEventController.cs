@@ -11,18 +11,18 @@ namespace BookingProcessor.Controllers;
 public class BookingEventController : ControllerBase
 {
     private const string StateStore = "bookingstore";
-    
+
     [Topic("pubsub", "bookings", "event.data.type ==\"StartBookingEvent\"", 1)]
     [HttpPost("initialize-booking")]
     public async Task<IActionResult> HandleCreditCreated(StartBookingEvent startBooking, DaprClient client)
     {
         Log.Information("New credit   - {Id}", startBooking.CreditId);
         
-        await Task.Delay(new Random().Next(1000, 2000));
-
         await client.SaveStateAsync(StateStore, $"{startBooking.CreditId}-{1}", new BookingMonth(1));
         
         EventConsumedMeter.StartBookingCounter.Add(1);
+        
+        await Task.Delay(new Random().Next(1000, 2000));
         
         return Ok();
     }

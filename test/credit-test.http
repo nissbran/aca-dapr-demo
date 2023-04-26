@@ -1,7 +1,7 @@
 GET http://localhost:5010/v1/credits/123314
 
 ### 
-GET http://localhost:5011/metrics
+GET https://credit-api.agreeablebay-534d13f5.norwayeast.azurecontainerapps.io/v1/credits/123314
 
 ###
 
@@ -15,17 +15,27 @@ content-type: application/json
 
 ###
 
-POST http://localhost:5010/v1/credits/6c73ffc0-47ae-4650-b939-0537a7870a61/transactions
+POST https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits
 content-type: application/json
 
 {
-    "value": 10,
-    "transactionDate": "2022-01-04"
+    "name": "test",
+    "startDate": "2023-01-01"
 }
 
 ###
 
-PUT http://localhost:5010/v1/credits/71e20aff-ce75-4d39-8557-674689bc8deb/close-month
+POST https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits/fd2b42b1-233a-4fd9-9ecf-44aecec52eb5/transactions
+content-type: application/json
+
+{
+    "value": 10,
+    "transactionDate": "2023-01-04"
+}
+
+###
+
+PUT https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits/fd2b42b1-233a-4fd9-9ecf-44aecec52eb5/close-month
 content-type: application/json
 
 {
@@ -44,3 +54,17 @@ content-type: application/json
 
 GET http://localhost:5010/v1/credits/f8ad60d4-9ade-49e3-b8ae-6256365b8f07/transactions
 
+###
+
+GET http://localhost:5041/
+
+###
+GET http://localhost:5010/metrics
+
+### 
+GET http://localhost:5012/metrics
+
+###
+GET http://localhost:5041/
+
+###
