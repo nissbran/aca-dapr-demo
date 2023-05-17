@@ -29,6 +29,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
             };
         }));
 builder.Services.AddControllers().AddDapr();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracingBuilder =>
@@ -58,4 +59,5 @@ var app = builder.Build();
 app.UseCloudEvents();
 app.MapSubscribeHandler();
 app.MapControllers();
+app.UseHealthChecks("/healthz");
 app.Run();

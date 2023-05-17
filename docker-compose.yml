@@ -68,21 +68,22 @@ services:
     ports:
       - 5010:80
     environment:
-      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
-      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
       OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   credit-api-dapr:
-    image: daprio/daprd:1.10.4
+    image: daprio/daprd:1.10.7
     command: ["./daprd",
      "-app-id", "credit-api",
      "-app-port", "80",
-     "-components-path", "./components",
+     #"--log-level", "debug",
+     "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
       kafka:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
       credit-api:
         condition: service_started
     network_mode: "service:credit-api"
@@ -94,21 +95,22 @@ services:
     ports:
       - 5011:80
     environment:
-      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
-      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
       OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   booking-processor-dapr-1:
-    image: daprio/daprd:1.10.4
+    image: daprio/daprd:1.10.7
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "80",
-     "-components-path", "./components",
+     #"--log-level", "debug",
+     "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
       kafka:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
       booking-processor-1:
         condition: service_started
     network_mode: "service:booking-processor-1"
@@ -120,21 +122,22 @@ services:
     ports:
       - 5012:80
     environment:
-      APPLICATION_INSIGHTS_CONNECTION_STRING: ${APPLICATION_INSIGHTS_CONNECTION_STRING}
-      OTEL_EXPORTER_ZIPKIN_ENDPOINT: 'http://otel-collector:9411/api/v2/spans'
       OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
   booking-processor-dapr-2:
-    image: daprio/daprd:1.10.4
+    image: daprio/daprd:1.10.7
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "80",
-     "-components-path", "./components",
+     #"--log-level", "debug",
+     "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
       kafka:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
       booking-processor-2:
         condition: service_started
     network_mode: "service:booking-processor-2"
@@ -148,15 +151,17 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: 'otel-collector:4317'
       INSECURE_MODE: true
   interest-rate-api-dapr:
-    image: daprio/daprd:edge
+    image: daprio/daprd:1.10.7
     command: ["./daprd",
      "-app-id", "interest-rate-api",
      "-app-port", "80",
-     "-components-path", "./components"]   
+     "-resources-path", "./components"]   
     volumes:
       - "./dapr/docker-components/:/components"
     depends_on:
       interest-rate-api:
+        condition: service_started
+      otel-collector:
         condition: service_started
     network_mode: "service:interest-rate-api"
 
@@ -243,3 +248,10 @@ services:
       CLUSTER: 'ACA'
     volumes:
       - ./certs/pfxcert.pfx:/certs/pfxcert.pfx
+
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - 5341:80
+    environment:
+      - ACCEPT_EULA=Y

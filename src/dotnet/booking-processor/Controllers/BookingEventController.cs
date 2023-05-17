@@ -4,6 +4,7 @@ using Dapr;
 using Dapr.Client;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Serilog.Context;
 
 namespace BookingProcessor.Controllers;
 
@@ -11,68 +12,104 @@ namespace BookingProcessor.Controllers;
 public class BookingEventController : ControllerBase
 {
     private const string StateStore = "bookingstore";
+    private const string SessionIdleTimeoutInSec = "20";
+    private const string MaxConcurrentSessions = "2";
 
     [Topic("pubsub", "bookings", "event.data.type ==\"StartBookingEvent\"", 1)]
+    [TopicMetadata("requireSessions", "true")]
+    [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
+    [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("initialize-booking")]
     public async Task<IActionResult> HandleCreditCreated(StartBookingEvent startBooking, DaprClient client)
     {
-        Log.Information("New credit   - {Id}", startBooking.CreditId);
-        
+        Log.Information("New credit   - {CreditId}", startBooking.CreditId);
+
         await client.SaveStateAsync(StateStore, $"{startBooking.CreditId}-{1}", new BookingMonth(1));
-        
+
         EventConsumedMeter.StartBookingCounter.Add(1);
-        
+
         await Task.Delay(new Random().Next(1000, 2000));
-        
+
         return Ok();
     }
 
     [Topic("pubsub", "bookings", "event.data.type ==\"BookingEvent\"", 2)]
+    [TopicMetadata("requireSessions", "true")]
+    [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
+    [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("bookings")]
     public async Task<IActionResult> HandleBooking(BookingEvent booking, DaprClient client)
     {
-        Log.Information("Started      - {Id} -- tag: {ETag}", booking.CreditId, booking.ETag);
-        
-        await Task.Delay(new Random().Next(250, 500));
-        
+        using var _ = LogContext.PushProperty("CreditId", booking.CreditId);
+
+        Log.Information("Started      - {CreditId} -- value: {Value} -- tag: {ETag}", booking.CreditId, booking.Value,
+            booking.ETag);
+
         var month = DateOnly.ParseExact(booking.Date, "yyyy-MM-dd").Month;
-        var bookingMonth = await client.GetStateAsync<BookingMonth>("bookingstore", $"{booking.CreditId}-{month}") ??
-                           new BookingMonth(month);
+        var (bookingMonth, etag) =
+            await client.GetStateAndETagAsync<BookingMonth>("bookingstore", $"{booking.CreditId}-{month}");
+
+        await Task.Delay(new Random().Next(250, 500));
+
+        bookingMonth ??= new BookingMonth(month);
 
         if (bookingMonth.Closed)
         {
-            Log.Error("Tried to add transaction to closed month {@Booking}", booking);
+            Log.Error("Tried to add transaction to closed month {@Booking}, sending to manual handling", booking);
+            await client.PublishEventAsync("pubsub", "faulty-bookings",
+                new FaultyBooking(booking.CreditId, booking.Value, booking.Date, month));
+            return Ok();
         }
         else
         {
-            bookingMonth.Bookings.Add(booking.Value);
+            bookingMonth.AddBooking(booking.Value, booking.ETag);
         }
 
-        await client.SaveStateAsync(StateStore, $"{booking.CreditId}-{month}", bookingMonth);
+        var result = await client.TrySaveStateAsync(StateStore, $"{booking.CreditId}-{month}", bookingMonth, etag);
+
+        if (result == false)
+        {
+            Log.Warning("Failed to save booking for {Booking}, sending conflict", $"{booking.CreditId}-{month}");
+            return Conflict();
+        }
 
         EventConsumedMeter.BookingCounter.Add(1);
-        
-        Log.Information("Processed    - {Id} -- tag: {ETag}", booking.CreditId, booking.ETag);
+
+        Log.Information("Processed    - {CreditId} -- tag: {ETag}", booking.CreditId, booking.ETag);
         return Ok();
     }
 
     [Topic("pubsub", "bookings", "event.data.type ==\"CloseMonthEvent\"", 3)]
+    [TopicMetadata("requireSessions", "true")]
+    [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
+    [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("close-month")]
     public async Task<IActionResult> CloseMonth(CloseMonthEvent closeMonth, DaprClient client)
     {
-        await Task.Delay(new Random().Next(500, 2000));
-        
-        var bookingMonth = await client.GetStateAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}") ??
-                           new BookingMonth(closeMonth.Month);
+        using var _ = LogContext.PushProperty("CreditId", closeMonth.CreditId);
+        var (bookingMonth, etag) =
+            await client.GetStateAndETagAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}");
 
+        bookingMonth ??= new BookingMonth(closeMonth.Month);
         bookingMonth.Closed = true;
 
-        Log.Information("Closed month - {Id} -- Month: {Month} -- Sum: {Sum}", 
+        await Task.Delay(new Random().Next(500, 2000));
+
+        Log.Information("Closed month - {Id} -- Month: {Month} -- Sum: {Sum}",
             closeMonth.CreditId, bookingMonth.Month, bookingMonth.Total);
-        await client.SaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}", bookingMonth);
-        
+
+        var result = await client.TrySaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}",
+            bookingMonth, etag);
+
+        if (result == false)
+        {
+            Log.Warning("Failed to save booking for {Booking}, sending conflict",
+                $"{closeMonth.CreditId}-{closeMonth.Month}");
+            return Conflict();
+        }
+
         EventConsumedMeter.ClosedMonthCounter.Add(1);
-        
+
         return Ok();
     }
 }
@@ -80,12 +117,29 @@ public class BookingEventController : ControllerBase
 public class BookingMonth
 {
     public int Month { get; }
-    public ICollection<int> Bookings { get; set; } = new List<int>();
-    public int Total => Bookings.Sum();
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public int Total => Bookings.Sum(booking => booking.Value);
     public bool Closed { get; set; }
 
     public BookingMonth(int month)
     {
         Month = month;
     }
+
+    public void AddBooking(int value, string etag)
+    {
+        if (Bookings.Any(booking => booking.ETag == etag))
+        {
+            Log.Warning("Duplicate booking for {ETag}", etag);
+            return;
+        }
+
+        Bookings.Add(new Booking { Value = value, ETag = etag });
+    }
+}
+
+public class Booking
+{
+    public int Value { get; set; }
+    public string ETag { get; set; }
 }

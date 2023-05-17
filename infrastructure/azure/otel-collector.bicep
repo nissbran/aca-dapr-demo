@@ -221,6 +221,10 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
               mountPath: '/etc/otelcol'
             }
           ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
         }
         {
           image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20221103.1'
@@ -247,6 +251,10 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
             value: otel_collector_uai.properties.clientId
            }
           ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
         }
       ]
       scale: {

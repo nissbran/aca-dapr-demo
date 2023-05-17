@@ -1,0 +1,29 @@
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: pubsub
+# spec:
+#   type: pubsub.kafka
+#   version: v1
+#   initTimeout: 30s
+#   ignoreErrors: true
+#   metadata:
+#   - name: brokers # Required.
+#     value: "<yournamespace>.servicebus.windows.net:9093"
+#   - name: consumeRetryInterval # Optional.
+#     value: 200ms
+#   - name: clientId # Optional. Client ID for the connection.
+#     value: "dapr-kafka-pubsub"
+#   # - name: consumerGroup
+#   #   value: "group"
+
+#   - name: authType # Required.
+#     value: "password"
+#   - name: saslUsername # Required if authType is `password`.
+#     value: "$ConnectionString"
+#   - name: saslPassword # Required if authType is `password`.
+#     value: "<yourconnectionstring>"
+#   - name: saslMechanism
+#     value: "PLAINTEXT"
+#   - name: version
+#     value: "1.0.0"

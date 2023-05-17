@@ -40,7 +40,7 @@ public class CreditModule : ICarterModule
         var startBooking = new StartBookingEvent(newCredit.Id);
         await client.PublishEventAsync("pubsub", "bookings", startBooking, new Dictionary<string, string>()
         {
-            { "partitionKey", newCredit.Id }
+            { "partitionKey", newCredit.Id }, { "SessionId", newCredit.Id}
         });
         
         CreditsChangedMeter.CreditsCreatedCounter.Add(1);
@@ -80,7 +80,7 @@ public class CreditModule : ICarterModule
                     transaction.TransactionDate.ToString("yyyy-MM-dd"), etag);
                 await client.PublishEventAsync("pubsub", "bookings", booking, new Dictionary<string, string>()
                 {
-                    { "partitionKey", credit.Id }
+                    { "partitionKey", credit.Id }, { "SessionId", credit.Id}
                 });
             }
 
@@ -113,7 +113,7 @@ public class CreditModule : ICarterModule
             var closeMonth = new CloseMonthEvent(credit.Id, month);
             await client.PublishEventAsync("pubsub", "bookings", closeMonth, new Dictionary<string, string>()
             {
-                { "partitionKey", credit.Id }
+                { "partitionKey", credit.Id }, { "SessionId", credit.Id}
             });
             return TypedResults.Ok();
         }

@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "CreditApi": {
+    "BookingProcessor": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,

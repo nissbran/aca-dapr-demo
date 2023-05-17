@@ -4,14 +4,15 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-var azure = "inserturi";
 var localCreditApi = "http://localhost:5010";
 var localBooking = "http://localhost:5011";
-var client = new HttpClient() { BaseAddress = new Uri(azure) };
-var tasks = new Task[10];
+var azure = "https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io";
+var client = new HttpClient() { BaseAddress = new Uri(localCreditApi) };
+const int numberOfTasks = 8;
+var tasks = new Task[numberOfTasks];
 var creditIds = new ConcurrentBag<string>();
 
-for (int i = 0; i < 10; i++)
+for (int i = 0; i < numberOfTasks; i++)
 {
     var creditNumber = i;
     tasks[i] = Task.Run(async () =>
@@ -39,12 +40,13 @@ for (int i = 0; i < 10; i++)
             var location = createCreditResponse.Headers.Location;
             for (int k = 0; k < 12; k++)
             {
-                for (int l = 0; l < 10; l++)
+                for (int l = 0; l < 20; l++)
                 {
                     var response = await client.PostAsJsonAsync($"{location}/transactions", new
                     {
                         Value = 10,
                         TransactionDate = $"2022-{k+1:00}-{l+1:00}"
+                        //TransactionDate = $"2022-{k+1:00}-10"
                     });
 
                     //await Task.Delay(1000);
@@ -75,7 +77,7 @@ foreach (var creditId in creditIds)
             Console.WriteLine($"No OK status code for id {creditId} and month {month}");
         
         var bookingResponse = JsonSerializer.Deserialize<BookingMonthResponse>(await response.Content.ReadAsStringAsync());
-        if (bookingResponse?.Total != 100)
+        if (bookingResponse?.Total != 200)
         {
             Console.WriteLine($"Wrong result for id {creditId} and month {month}");
         }
@@ -94,9 +96,14 @@ public class CreateCreditResponse
 public class BookingMonthResponse
 {
     [JsonPropertyName("bookings")]
-    public ICollection<int> Bookings { get; set; } = new List<int>();
+    public ICollection<BookingResponseItem> Bookings { get; set; } = new List<BookingResponseItem>();
     [JsonPropertyName("total")]
     public int Total { get; set; }
     [JsonPropertyName("closed")]
     public bool Closed { get; set; }
+}
+public class BookingResponseItem
+{
+    [JsonPropertyName("value")]
+    public int Value { get; set; }
 }
