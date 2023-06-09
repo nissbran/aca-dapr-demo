@@ -204,7 +204,7 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
       
       containers: [
         {
-          image: 'otel/opentelemetry-collector-contrib:0.75.0'
+          image: 'otel/opentelemetry-collector-contrib:0.78.0'
           name: 'otel-collector'
           args: [
             '--config=/etc/otelcol/otel-collector-app.yaml'

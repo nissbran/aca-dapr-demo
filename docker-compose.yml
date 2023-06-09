@@ -1,3 +1,8 @@
+x-common-variables: &common-variables
+  ASPNETCORE_ENVIRONMENT: Development
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
+  SEQ_ENDPOINT: 'http://seq:5341'
+
 services:
 
 ## ---------------- GO
@@ -68,7 +73,10 @@ services:
     ports:
       - 5010:80
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
+      <<: *common-variables
+    depends_on:
+      otel-collector:
+        condition: service_started
   credit-api-dapr:
     image: daprio/daprd:1.10.7
     command: ["./daprd",
@@ -95,7 +103,10 @@ services:
     ports:
       - 5011:80
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
+      <<: *common-variables
+    depends_on:
+      otel-collector:
+        condition: service_started
   booking-processor-dapr-1:
     image: daprio/daprd:1.10.7
     command: ["./daprd",
@@ -122,7 +133,10 @@ services:
     ports:
       - 5012:80
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4317'
+      <<: *common-variables
+    depends_on:
+      otel-collector:
+        condition: service_started
   booking-processor-dapr-2:
     image: daprio/daprd:1.10.7
     command: ["./daprd",
@@ -150,6 +164,9 @@ services:
       SERVICE_NAME: interest-rate-api
       OTEL_EXPORTER_OTLP_ENDPOINT: 'otel-collector:4317'
       INSECURE_MODE: true
+    depends_on:
+      otel-collector:
+        condition: service_started
   interest-rate-api-dapr:
     image: daprio/daprd:1.10.7
     command: ["./daprd",
@@ -229,7 +246,7 @@ services:
       JAVA_OPTS: '-Xms1g -Xmx1g -XX:+ExitOnOutOfMemoryError'
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.75.0
+    image: otel/opentelemetry-collector-contrib:0.79.0
     command: ["--config=conf/config.yaml"]
     environment:
       - APPLICATION_INSIGHTS_INSTRUMENTATION_KEY=${APPLICATION_INSIGHTS_INSTRUMENTATION_KEY}
@@ -237,7 +254,7 @@ services:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
 
   otel-prom-remote-write:
-    image: mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20221103.1
+    image: mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20230505.1
     environment:
       INGESTION_URL: ${AZURE_MONITOR_INGESTION_URL}
       LISTENING_PORT: 8081
@@ -255,3 +272,13 @@ services:
       - 5341:80
     environment:
       - ACCEPT_EULA=Y
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 9090:9090
+    command: 
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+      - '--storage.tsdb.retention.time=1d'

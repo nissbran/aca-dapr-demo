@@ -20,13 +20,13 @@ public class BookingEventController : ControllerBase
     [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
     [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("initialize-booking")]
-    public async Task<IActionResult> HandleCreditCreated(StartBookingEvent startBooking, DaprClient client)
+    public async Task<IActionResult> HandleCreditCreated(StartBookingEvent startBooking, DaprClient client, EventConsumedMetrics metrics)
     {
         Log.Information("New credit   - {CreditId}", startBooking.CreditId);
 
         await client.SaveStateAsync(StateStore, $"{startBooking.CreditId}-{1}", new BookingMonth(1));
 
-        EventConsumedMeter.StartBookingCounter.Add(1);
+        metrics.IncrementStartBookingEvents();
 
         await Task.Delay(new Random().Next(1000, 2000));
 
@@ -38,7 +38,7 @@ public class BookingEventController : ControllerBase
     [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
     [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("bookings")]
-    public async Task<IActionResult> HandleBooking(BookingEvent booking, DaprClient client)
+    public async Task<IActionResult> HandleBooking(BookingEvent booking, DaprClient client, EventConsumedMetrics metrics)
     {
         using var _ = LogContext.PushProperty("CreditId", booking.CreditId);
 
@@ -73,7 +73,7 @@ public class BookingEventController : ControllerBase
             return Conflict();
         }
 
-        EventConsumedMeter.BookingCounter.Add(1);
+        metrics.IncrementTransactionBookingEvents();
 
         Log.Information("Processed    - {CreditId} -- tag: {ETag}", booking.CreditId, booking.ETag);
         return Ok();
@@ -84,7 +84,7 @@ public class BookingEventController : ControllerBase
     [TopicMetadata("sessionIdleTimeoutInSec", SessionIdleTimeoutInSec)]
     [TopicMetadata("maxConcurrentSessions", MaxConcurrentSessions)]
     [HttpPost("close-month")]
-    public async Task<IActionResult> CloseMonth(CloseMonthEvent closeMonth, DaprClient client)
+    public async Task<IActionResult> CloseMonth(CloseMonthEvent closeMonth, DaprClient client, EventConsumedMetrics metrics)
     {
         using var _ = LogContext.PushProperty("CreditId", closeMonth.CreditId);
         var (bookingMonth, etag) =
@@ -108,7 +108,7 @@ public class BookingEventController : ControllerBase
             return Conflict();
         }
 
-        EventConsumedMeter.ClosedMonthCounter.Add(1);
+        metrics.IncrementClosedMonthEvents();
 
         return Ok();
     }

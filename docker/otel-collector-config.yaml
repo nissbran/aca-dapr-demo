@@ -40,6 +40,8 @@ exporters:
     endpoint: "http://zipkin:9411/api/v2/spans"
   prometheusremotewrite:
     endpoint: "http://otel-prom-remote-write:8081/api/v1/write"
+  prometheusremotewrite/local:
+    endpoint: "http://prometheus:9090/api/v1/write"
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
@@ -50,7 +52,7 @@ service:
     metrics:
       receivers: [otlp, prometheus]
       processors: [attributes]
-      exporters: [logging, azuremonitor, prometheusremotewrite]
+      exporters: [logging, azuremonitor, prometheusremotewrite, prometheusremotewrite/local]
     logs:
       receivers: [otlp]
       processors: [attributes]

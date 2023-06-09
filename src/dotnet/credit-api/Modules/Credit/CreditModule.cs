@@ -1,5 +1,4 @@
 ﻿using Carter;
-using CreditApi.Telemetry;
 using Dapr.Client;
 using Serilog;
 
@@ -21,7 +20,7 @@ public class CreditModule : ICarterModule
         group.MapPut("{id}/close-month", CloseMonth);
     }
 
-    private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client)
+    private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client, CreditMetrics metrics)
     {
         //var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
         
@@ -43,7 +42,8 @@ public class CreditModule : ICarterModule
             { "partitionKey", newCredit.Id }, { "SessionId", newCredit.Id}
         });
         
-        CreditsChangedMeter.CreditsCreatedCounter.Add(1);
+        metrics.IncrementCreditsCreated();
+        
         return TypedResults.Created($"v1/credits/{newCredit.Id}", new
         {
             CreditId = newCredit.Id
@@ -59,7 +59,7 @@ public class CreditModule : ICarterModule
     }
 
     private static async Task<IResult> AddTransaction(HttpContext context, string id, AddTransactionRequest request,
-        DaprClient client)
+        DaprClient client, CreditMetrics metrics)
     {
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
@@ -73,8 +73,10 @@ public class CreditModule : ICarterModule
         {
             foreach (var transaction in credit.NewTransactions)
             {
-                CreditsChangedMeter.CreditsTransactionValueAdded.Add(transaction.Value);
+                metrics.AddTransactionValue(transaction.Value);
 
+                //await Task.Delay(100);
+                
                 Log.Information("Sent booking message");
                 var booking = new BookingEvent(credit.Id, transaction.Value,
                     transaction.TransactionDate.ToString("yyyy-MM-dd"), etag);
