@@ -36,7 +36,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [attributes]
-      exporters: [logging,azuremonitor]
+      exporters: [logging,prometheusremotewrite]
     logs:
       receivers: [otlp]
       processors: [attributes]

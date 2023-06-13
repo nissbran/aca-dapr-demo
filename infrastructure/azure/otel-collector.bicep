@@ -3,6 +3,7 @@ param location string = resourceGroup().location
 param utcValue string = utcNow()
 param azureMonitorIngestionUrl string
 
+// Existing resources ----------------------------------------------------------
 resource aca_env 'Microsoft.App/managedEnvironments@2022-10-01' existing = {
   name: 'acaenv${name}'
 }
@@ -20,6 +21,7 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
   name: 'default'
 }
 
+// Otel configuration ----------------------------------------------------------
 resource configShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2022-05-01' = {
   name: 'otel-config'
   parent: fileServices
@@ -42,32 +44,6 @@ resource otelConfigShare 'Microsoft.App/managedEnvironments/storages@2022-03-01'
     }
   }
 }
-
-// resource deploymentScript 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
-//   name: 'deployscript-upload-otel-${utcValue}'
-//   location: location
-//   kind: 'AzureCLI'
-//   properties: {
-//     azCliVersion: '2.26.1'
-//     timeout: 'PT5M'
-//     retentionInterval: 'PT1H'
-//     environmentVariables: [
-//       {
-//         name: 'AZURE_STORAGE_ACCOUNT'
-//         value: storageAccount.name
-//       }
-//       {
-//         name: 'AZURE_STORAGE_KEY'
-//         secureValue: storageAccount.listKeys().keys[0].value
-//       }
-//       {
-//         name: 'CONTENT'
-//         value: loadTextContent('otel-collector-config/otel-collector.yaml')
-//       }
-//     ]
-//     scriptContent: 'echo "$CONTENT" > otel-collector.yaml && az storage file upload --source otel-collector.yaml -s ${configShare.name}'
-//   }
-// }
 
 resource deploymentScriptApp 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
   name: 'deployscript-upload-otel-app-${utcValue}'
@@ -95,92 +71,11 @@ resource deploymentScriptApp 'Microsoft.Resources/deploymentScripts@2020-10-01' 
   }
 }
 
+// Otel collector --------------------------------------------------------------
 resource otel_collector_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'id-otel-collector'
   location: location
 }
-
-// Dapr trace
-// resource otel_collector 'Microsoft.App/containerApps@2022-03-01' = {
-//   name: 'otel-collector'
-//   location: location
-//   identity: {
-//     type: 'UserAssigned'
-//     userAssignedIdentities: {
-//       '${otel_collector_uai.id}': {}
-//     }
-//   }
-//   properties: {
-//     managedEnvironmentId: aca_env.id
-//     configuration: {
-//       activeRevisionsMode: 'single'
-//       ingress: {
-//         external: false
-//         targetPort: 9411
-//       }
-//     }
-//     template: {
-      
-//       containers: [
-//         {
-//           image: 'otel/opentelemetry-collector-contrib:0.75.0'
-//           name: 'otel-collector'
-//           args: [
-//             '--config=/etc/otelcol/otel-collector.yaml'
-//           ]
-//           volumeMounts: [
-//             {
-//               volumeName: 'otel-collector-config'
-//               mountPath: '/etc/otelcol'
-//             }
-//           ]
-//         }
-//         {
-//           image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20221103.1'
-//           name: 'prom-remotewrite'
-//           env: [
-//            {
-//             name: 'INGESTION_URL'
-//             value: azureMonitorIngestionUrl
-//            }
-//            {
-//             name: 'LISTENING_PORT'
-//             value: '8081'
-//            }
-//            {
-//             name: 'IDENTITY_TYPE'
-//             value: 'userAssigned'
-//            }
-//            {
-//             name: 'CLUSTER'
-//             value: aca_env.name
-//            }
-//            {
-//             name: 'AZURE_CLIENT_ID'
-//             value: otel_collector_uai.properties.clientId
-//            }
-//           ]
-//         }
-//       ]
-//       scale: {
-//         minReplicas: 1
-//         maxReplicas: 1
-//         rules: []
-//       }
-//       volumes: [
-//         {
-//           name: 'otel-collector-config'
-//           storageType: 'AzureFile'
-//           storageName: 'otelconfig'
-//         }
-//       ]
-//     }
-//   }
-//   dependsOn: [
-//     otelConfigShare
-//     deploymentScript
-//   ]
-// }
 
 resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
   name: 'otel-collector-app'
@@ -227,7 +122,7 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
           }
         }
         {
-          image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20221103.1'
+          image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20230505.1'
           name: 'prom-remotewrite'
           env: [
            {
