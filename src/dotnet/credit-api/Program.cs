@@ -77,7 +77,6 @@ builder.Services.AddOpenTelemetry()
 
         metricsBuilder
             .AddOtlpExporter()
-            .AddPrometheusExporter()
             .AddCreditMetrics()
             .SetResourceBuilder(resourceBuilder)
             .AddHttpClientInstrumentation()
@@ -93,7 +92,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHealthChecks("/healthz");
-app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.UseSerilogRequestLogging();
 app.MapCarter();
 app.Run();

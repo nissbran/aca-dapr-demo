@@ -188,6 +188,13 @@ services:
     image: redis:latest
     ports:
       - 6380:6379
+  
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    ports:
+      - 9121:9121
+    environment:
+      REDIS_ADDR: redis:6379
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.0

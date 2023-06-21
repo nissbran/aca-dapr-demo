@@ -1,4 +1,5 @@
-﻿using Carter;
+﻿using System.Diagnostics;
+using Carter;
 using Dapr.Client;
 using Serilog;
 
@@ -22,13 +23,16 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client, CreditMetrics metrics)
     {
-        //var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
+        var creditId = Guid.NewGuid().ToString();
+        Activity.Current?.AddTag("creditId", creditId);
+
+        var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
         
         var newCredit = new Credit
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = creditId,
             Name = request.Name,
-            //InterestRate = interestRateResponse.InterestRate,
+            InterestRate = interestRateResponse.InterestRate,
             CurrentMonth = DateOnly.ParseExact(request.StartDate, "yyyy-MM-dd")
         };
 
@@ -52,6 +56,7 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> GetCredit(HttpContext context, string id, DaprClient client)
     {
+        Activity.Current?.AddTag("creditId", id);
         var (credit, _) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
@@ -61,6 +66,7 @@ public class CreditModule : ICarterModule
     private static async Task<IResult> AddTransaction(HttpContext context, string id, AddTransactionRequest request,
         DaprClient client, CreditMetrics metrics)
     {
+        Activity.Current?.AddTag("creditId", id);
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
@@ -73,7 +79,7 @@ public class CreditModule : ICarterModule
         {
             foreach (var transaction in credit.NewTransactions)
             {
-                metrics.AddTransactionValue(transaction.Value);
+                metrics.AddTransactionValue(transaction.Value, "SEK");
 
                 //await Task.Delay(100);
                 
@@ -104,6 +110,7 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> CloseMonth(HttpContext context, string id, DaprClient client)
     {
+        Activity.Current?.AddTag("creditId", id);
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();

@@ -6,18 +6,14 @@ receivers:
   prometheus:
     config:
       scrape_configs:
-      # - job_name: 'booking-processes'
-      #   scrape_interval: 10s
-      #   static_configs:
-      #   - targets: ['booking-processor-1:80', 'booking-processor-2:80']
-      # - job_name: 'credit-api'
-      #   scrape_interval: 10s
-      #   static_configs:
-      #   - targets: ['credit-api:80']
       - job_name: 'kafka'
         scrape_interval: 10s
         static_configs:
         - targets: ['kafka-exporter:9308']
+      - job_name: 'redis'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['redis-exporter:9121']
 extensions:
   health_check:
   pprof:
@@ -52,7 +48,7 @@ service:
     metrics:
       receivers: [otlp, prometheus]
       processors: [attributes]
-      exporters: [logging, azuremonitor, prometheusremotewrite, prometheusremotewrite/local]
+      exporters: [logging, prometheusremotewrite, prometheusremotewrite/local]
     logs:
       receivers: [otlp]
       processors: [attributes]
