@@ -164,7 +164,7 @@ resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
     template: {
       containers: [
         {
-          image: '${acr.name}.azurecr.io/credits/booking-processor:0.2'
+          image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
           name: 'booking-processor'
           env: [
             {
@@ -278,7 +278,7 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
     template: {
       containers: [
         {
-          image: '${acr.name}.azurecr.io/credits/interest-rate-api:0.2'
+          image: '${acr.name}.azurecr.io/credits/interest-rate-api:0.1'
           name: 'interest-rate-api'
           env: [
             {

@@ -30,7 +30,6 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: loganalytics_workspace.id
-    SamplingPercentage: 4
   }
 }
 

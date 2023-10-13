@@ -2,7 +2,7 @@
 nameOverride: "ingress-nginx"
 
 controller:
-  replicaCount: 2
+  replicaCount: 1
   service:
     annotations:
       service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"

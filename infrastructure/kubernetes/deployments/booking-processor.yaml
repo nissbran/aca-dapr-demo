@@ -28,6 +28,11 @@ spec:
         image: <registry>/credits/booking-processor:0.1
         ports:
         - containerPort: 80
+        env:
+        - name: USE_PROMETHEUS_ENDPOINT
+          value: "true"
+        - name: USE_CONSOLE_LOG_OUTPUT
+          value: "true"
         resources:
           requests:
             cpu: 100m

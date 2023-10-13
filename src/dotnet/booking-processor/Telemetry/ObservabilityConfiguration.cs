@@ -78,7 +78,7 @@ internal static class ObservabilityConfiguration
                     .AddOtlpExporter()
                     .SetResourceBuilder(resourceBuilder)
                     .AddHttpClientInstrumentation()
-                    .AddGrpcClientInstrumentation(options => options.SuppressDownstreamInstrumentation = true)
+                    .AddGrpcClientInstrumentation()
                     .AddAspNetCoreInstrumentation(options => options.Filter = TraceEndpointsFilter);
             })
             .WithMetrics(metricsBuilder =>
