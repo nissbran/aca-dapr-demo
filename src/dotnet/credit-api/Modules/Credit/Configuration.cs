@@ -9,10 +9,10 @@ public static class CreditConfiguration
         services.AddSingleton<CreditMetrics>();
         return services;
     }
+    
     internal static MeterProviderBuilder AddCreditMetrics(this MeterProviderBuilder builder)
     {
         builder.AddMeter(CreditMetrics.InstrumentationName);
         return builder.AddInstrumentation(provider => provider.GetRequiredService<CreditMetrics>());
     }
-    
 }

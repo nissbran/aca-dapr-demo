@@ -3,12 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
-	"google.golang.org/grpc/credentials"
 	"log"
 	"net/http"
 	"os"
@@ -16,13 +10,23 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/grpc/credentials"
+
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
+	serviceName  = "interest-rate-api"
+	version      = os.Getenv("APP_VERSION")
 	collectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	protocol     = os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 	insecure     = os.Getenv("INSECURE_MODE")
 )
 
@@ -87,23 +91,26 @@ func startServerWithCleanShutdown(handler http.Handler) {
 
 func initTracer() func(context.Context) error {
 
-	secureOption := otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
-	if len(insecure) > 0 {
-		secureOption = otlptracegrpc.WithInsecure()
-	}
-
 	if len(collectorURL) == 0 {
 		log.Println("No collector URL provided, skipping tracer initialization")
 		return nil
 	}
 
-	exporter, err := otlptrace.New(
-		context.Background(),
-		otlptracegrpc.NewClient(
-			secureOption,
-			otlptracegrpc.WithEndpoint(collectorURL),
-		),
-	)
+	var client otlptrace.Client
+	if protocol == "http/protobuf" {
+		if len(insecure) > 0 {
+			client = otlptracehttp.NewClient(otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(collectorURL), otlptracehttp.WithURLPath("v1/traces"), otlptracehttp.WithCompression(otlptracehttp.NoCompression))
+		} else {
+			client = otlptracehttp.NewClient(otlptracehttp.WithEndpoint(collectorURL), otlptracehttp.WithCompression(otlptracehttp.NoCompression))
+		}
+	} else {
+		secureOption := otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
+		if len(insecure) > 0 {
+			secureOption = otlptracegrpc.WithInsecure()
+		}
+		client = otlptracegrpc.NewClient(secureOption, otlptracegrpc.WithEndpoint(collectorURL))
+	}
+	exporter, err := otlptrace.New(context.Background(), client)
 
 	if err != nil {
 		log.Fatal(err)
@@ -111,7 +118,10 @@ func initTracer() func(context.Context) error {
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
+			attribute.String("service.namespace", "credits"),
 			attribute.String("service.name", serviceName),
+			attribute.String("service.version", version),
+			attribute.String("service.team", "go team"),
 			attribute.String("library.language", "go"),
 		),
 	)

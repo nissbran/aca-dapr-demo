@@ -4,7 +4,7 @@ param utcValue string = utcNow()
 param azureMonitorIngestionUrl string
 
 // Existing resources ----------------------------------------------------------
-resource aca_env 'Microsoft.App/managedEnvironments@2022-10-01' existing = {
+resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: 'acaenv${name}'
 }
 
@@ -12,17 +12,17 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: 'appinsights${name}'
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   name: 'stoacc${name}'
 }
 
-resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' existing = {
+resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' existing = {
   parent: storageAccount
   name: 'default'
 }
 
 // Otel configuration ----------------------------------------------------------
-resource configShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2022-05-01' = {
+resource configShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
   name: 'otel-config'
   parent: fileServices
   properties: {
@@ -32,7 +32,7 @@ resource configShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2022
   }
 }
 
-resource otelConfigShare 'Microsoft.App/managedEnvironments/storages@2022-03-01' = {
+resource otelConfigShare 'Microsoft.App/managedEnvironments/storages@2023-05-01' = {
   name: 'otelconfig'
   parent: aca_env
   properties: {
@@ -46,6 +46,7 @@ resource otelConfigShare 'Microsoft.App/managedEnvironments/storages@2022-03-01'
 }
 
 resource deploymentScriptApp 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
+#disable-next-line use-stable-resource-identifiers
   name: 'deployscript-upload-otel-app-${utcValue}'
   location: location
   kind: 'AzureCLI'
@@ -77,7 +78,7 @@ resource otel_collector_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@20
   location: location
 }
 
-resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
+resource otel_collector_metrics_app 'Microsoft.App/containerApps@2023-05-01' = {
   name: 'otel-collector-app'
   location: location
   identity: {
@@ -99,7 +100,7 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
       
       containers: [
         {
-          image: 'otel/opentelemetry-collector-contrib:0.78.0'
+          image: 'otel/opentelemetry-collector-contrib:0.86.0'
           name: 'otel-collector'
           args: [
             '--config=/etc/otelcol/otel-collector-app.yaml'
@@ -122,7 +123,7 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2022-03-01' = {
           }
         }
         {
-          image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20230505.1'
+          image: 'mcr.microsoft.com/azuremonitor/prometheus/promdev/prom-remotewrite:prom-remotewrite-20230906.1'
           name: 'prom-remotewrite'
           env: [
            {

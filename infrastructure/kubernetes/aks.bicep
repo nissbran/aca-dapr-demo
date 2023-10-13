@@ -3,15 +3,15 @@ param acrname string = 'acr${name}'
 param nodeResourceGroup string = 'rg-aks-${name}-nodes'
 param location string = resourceGroup().location
 
-param kubernetesVersion string = '1.23.8'
+param kubernetesVersion string = '1.27.3'
 
-var agentVMSize = 'Standard_D2s_v3'
+var agentVMSize = 'Standard_D4as_v5'
 
 // Aks rbac roles assigned to the managed identity
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 var managedIdentityOperatorRole = resourceId('Microsoft.Authorization/roleDefinitions', 'f1a07417-d97a-45cb-824c-7a7467783830')
 
-resource acr 'Microsoft.ContainerRegistry/registries@2021-12-01-preview' existing = {
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
   name: acrname
 }
 
@@ -40,7 +40,7 @@ resource aks_uai_mio_rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   }
 }
 
-resource aks 'Microsoft.ContainerService/managedClusters@2023-02-01' = {
+resource aks 'Microsoft.ContainerService/managedClusters@2023-08-01' = {
   name: 'aks-${name}'
   location: location
   identity: {

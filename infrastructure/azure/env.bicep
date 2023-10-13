@@ -1,11 +1,14 @@
 param name string
 param location string = resourceGroup().location
 
-resource acr 'Microsoft.ContainerRegistry/registries@2021-09-01' = {
-  name: 'acr${name}'
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: 'acrdapr${name}'
   location: location
   sku: {
     name: 'Basic'
+  }
+  properties:{
+    adminUserEnabled: true
   }
 }
 
@@ -26,13 +29,12 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   location: location
   properties: {
     Application_Type: 'web'
-    Flow_Type: 'Redfield'
-    Request_Source: 'CustomDeployment'
     WorkspaceResourceId: loganalytics_workspace.id
+    SamplingPercentage: 4
   }
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: 'stoacc${name}'
   location: location
   sku: {
@@ -46,13 +48,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = {
   }
 }
 
-resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = {
+resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
 }
 
 // Service Bus ------------------------------------------------
-resource sb_ns 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
+resource sb_ns 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
   name: 'sb${name}'
   location: location
   sku: {
@@ -79,7 +81,7 @@ resource sb_ns 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
   }
 }
 
-resource sbSharedKey 'Microsoft.ServiceBus/namespaces/authorizationRules@2021-11-01' = {
+resource sbSharedKey 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11-01' = {
   name: 'credits'
   parent: sb_ns
   properties: {
@@ -88,7 +90,7 @@ resource sbSharedKey 'Microsoft.ServiceBus/namespaces/authorizationRules@2021-11
 }
 
 // Cosmos DB --------------------------------------------------
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-09-15' = {
   name: 'cosmos${name}'
   location: location
   kind: 'GlobalDocumentDB'
@@ -112,7 +114,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
   }
 }
 
-resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-11-15' = {
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-09-15' = {
   parent: cosmos
   name: 'credits'
   properties: {
@@ -122,7 +124,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-11-15
   }
 }
 
-resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
+resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-09-15' = {
   parent: database
   name: 'creditstore'
   properties: {
@@ -138,7 +140,7 @@ resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contain
   }
 }
 
-resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
+resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-09-15' = {
   parent: database
   name: 'bookingstore'
   properties: {
@@ -154,7 +156,29 @@ resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contai
   }
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2022-11-01-preview' = {
+resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2023-04-15' = {
+  name: guid('sql-rw-role-definition', cosmos.id)
+  parent: cosmos
+  properties: {
+    roleName: 'application-rw-role'
+    type: 'CustomRole'
+    assignableScopes: [
+      cosmos.id
+    ]
+    permissions: [
+      {
+        dataActions: [
+          'Microsoft.DocumentDB/databaseAccounts/readMetadata'
+          'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/*'
+          'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/items/*'
+        ]
+      }
+    ]
+  }
+}
+
+// Azure Container Apps ---------------------------------------
+resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: 'acaenv${name}'
   location: location
   properties: {
@@ -167,10 +191,17 @@ resource aca_env 'Microsoft.App/managedEnvironments@2022-11-01-preview' = {
     }
     daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
     daprAIConnectionString: appinsights.properties.ConnectionString
+    infrastructureResourceGroup: 'rg-aca-${name}-infra'
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
   }
 }
 
-resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
+resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'pubsub'
   parent: aca_env
   properties: {
@@ -179,8 +210,8 @@ resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022
     initTimeout: '30s'
     metadata: [
       {
-        name: 'connectionString'
-        value: sbSharedKey.listKeys().primaryConnectionString
+        name: 'namespaceName'
+        value: '${sb_ns.name}.servicebus.windows.net'
       }
       {
         name: 'maxActiveMessages'
@@ -193,7 +224,7 @@ resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022
   }
 }
 
-resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
+resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'creditstore'
   parent: aca_env
   properties: {
@@ -204,10 +235,6 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
       {
         name: 'url'
         value: cosmos.properties.documentEndpoint
-      }
-      {
-        name: 'masterKey'
-        value: cosmos.listKeys().primaryMasterKey
       }
       {
         name: 'database'
@@ -224,7 +251,7 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
   }
 }
 
-resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
+resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'bookingstore'
   parent: aca_env
   properties: {
@@ -235,10 +262,6 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
       {
         name: 'url'
         value: cosmos.properties.documentEndpoint
-      }
-      {
-        name: 'masterKey'
-        value: cosmos.listKeys().primaryMasterKey
       }
       {
         name: 'database'
@@ -254,3 +277,9 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
     ]
   }
 }
+
+
+// {
+//   name: 'masterKey'
+//   value: cosmos.listKeys().primaryMasterKey
+// }

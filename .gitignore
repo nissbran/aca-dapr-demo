@@ -6,6 +6,7 @@
 *.sln.ide/
 *.userprefs
 *.GhostDoc.xml
+.vscode
 .vs
 
 # Outputs

@@ -1,10 +1,10 @@
 param name string
 
-resource aks 'Microsoft.ContainerService/managedClusters@2023-02-01' existing = {
+resource aks 'Microsoft.ContainerService/managedClusters@2023-08-01' existing = {
   name: 'aks-${name}'
 }
 
-resource daprExtension 'Microsoft.KubernetesConfiguration/extensions@2022-11-01' = {
+resource daprExtension 'Microsoft.KubernetesConfiguration/extensions@2023-05-01' = {
   name: 'dapr'
   scope: aks
   properties: {

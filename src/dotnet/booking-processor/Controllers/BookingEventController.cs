@@ -1,8 +1,10 @@
-﻿using BookingProcessor.Contract;
+﻿using System.Diagnostics;
+using BookingProcessor.Contract;
 using BookingProcessor.Telemetry;
 using Dapr;
 using Dapr.Client;
 using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry;
 using Serilog;
 using Serilog.Context;
 
@@ -22,6 +24,11 @@ public class BookingEventController : ControllerBase
     [HttpPost("initialize-booking")]
     public async Task<IActionResult> HandleCreditCreated(StartBookingEvent startBooking, DaprClient client, EventConsumedMetrics metrics)
     {
+        var creditId = startBooking.CreditId;
+        Baggage.SetBaggage("creditId", creditId);
+        Activity.Current?.AddTag("creditId", creditId);
+        using var _ = LogContext.PushProperty("CreditId", creditId);
+        
         Log.Information("New credit   - {CreditId}", startBooking.CreditId);
 
         await client.SaveStateAsync(StateStore, $"{startBooking.CreditId}-{1}", new BookingMonth(1));
@@ -40,7 +47,10 @@ public class BookingEventController : ControllerBase
     [HttpPost("bookings")]
     public async Task<IActionResult> HandleBooking(BookingEvent booking, DaprClient client, EventConsumedMetrics metrics)
     {
-        using var _ = LogContext.PushProperty("CreditId", booking.CreditId);
+        var creditId = booking.CreditId;
+        Baggage.SetBaggage("creditId", creditId);
+        Activity.Current?.AddTag("creditId", creditId);
+        using var _ = LogContext.PushProperty("CreditId", creditId);
 
         Log.Information("Started      - {CreditId} -- value: {Value} -- tag: {ETag}", booking.CreditId, booking.Value,
             booking.ETag);
@@ -56,8 +66,7 @@ public class BookingEventController : ControllerBase
         if (bookingMonth.Closed)
         {
             Log.Error("Tried to add transaction to closed month {@Booking}, sending to manual handling", booking);
-            await client.PublishEventAsync("pubsub", "faulty-bookings",
-                new FaultyBooking(booking.CreditId, booking.Value, booking.Date, month));
+            await client.PublishEventAsync("pubsub", "faulty-bookings", new FaultyBooking(booking.CreditId, booking.Value, booking.Date, month));
             return Ok();
         }
         else
@@ -86,9 +95,11 @@ public class BookingEventController : ControllerBase
     [HttpPost("close-month")]
     public async Task<IActionResult> CloseMonth(CloseMonthEvent closeMonth, DaprClient client, EventConsumedMetrics metrics)
     {
+        var creditId = Baggage.GetBaggage("creditId");
+        Activity.Current?.AddTag("creditId", creditId);
         using var _ = LogContext.PushProperty("CreditId", closeMonth.CreditId);
-        var (bookingMonth, etag) =
-            await client.GetStateAndETagAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}");
+        
+        var (bookingMonth, etag) = await client.GetStateAndETagAsync<BookingMonth>(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}");
 
         bookingMonth ??= new BookingMonth(closeMonth.Month);
         bookingMonth.Closed = true;
@@ -98,8 +109,7 @@ public class BookingEventController : ControllerBase
         Log.Information("Closed month - {Id} -- Month: {Month} -- Sum: {Sum}",
             closeMonth.CreditId, bookingMonth.Month, bookingMonth.Total);
 
-        var result = await client.TrySaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}",
-            bookingMonth, etag);
+        var result = await client.TrySaveStateAsync(StateStore, $"{closeMonth.CreditId}-{closeMonth.Month}", bookingMonth, etag);
 
         if (result == false)
         {

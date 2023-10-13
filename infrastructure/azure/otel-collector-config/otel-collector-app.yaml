@@ -10,6 +10,9 @@ extensions:
   zpages:
     endpoint: :55679
 processors:
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
   attributes:
     actions:
       - key: environment
@@ -18,11 +21,13 @@ processors:
       - key: cluster
         value: $CONTAINER_APP_ENV_DNS_SUFFIX
         action: insert
+  probabilistic_sampler:
+    hash_seed: 11
+    sampling_percentage: 25
 exporters:
-  logging:
-  #  verbosity: detailed
+  debug:
   azuremonitor:
-    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    endpoint: "https://swedencentral-0.in.applicationinsights.azure.com/v2/track"
     instrumentation_key: $APPLICATION_INSIGHTS_INSTRUMENTATION_KEY
   prometheusremotewrite:
     endpoint: "http://localhost:8081/api/v1/write"
@@ -31,14 +36,14 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes]
-      exporters: [logging,azuremonitor]
+      processors: [probabilistic_sampler, attributes, batch]
+      exporters: [debug, azuremonitor]
     metrics:
       receivers: [otlp]
-      processors: [attributes]
-      exporters: [logging,prometheusremotewrite]
+      processors: [attributes, batch]
+      exporters: [debug, prometheusremotewrite]
     logs:
       receivers: [otlp]
-      processors: [attributes]
-      exporters: [logging,azuremonitor]
+      processors: [attributes, batch]
+      exporters: [debug, azuremonitor]
   

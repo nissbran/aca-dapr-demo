@@ -1,16 +1,15 @@
 ﻿using System.Diagnostics;
-using Carter;
 using Dapr.Client;
+using OpenTelemetry;
 using Serilog;
 
 namespace CreditApi.Modules.Credit;
 
-// ReSharper disable once UnusedType.Global
-public class CreditModule : ICarterModule
+public static class CreditModule
 {
     private const string StateStore = "creditstore";
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void MapRoutes(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("v1/credits");
 
@@ -24,15 +23,15 @@ public class CreditModule : ICarterModule
     private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client, CreditMetrics metrics)
     {
         var creditId = Guid.NewGuid().ToString();
+        
+        Baggage.SetBaggage("creditId", creditId);
         Activity.Current?.AddTag("creditId", creditId);
-
-        var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
         
         var newCredit = new Credit
         {
             Id = creditId,
             Name = request.Name,
-            InterestRate = interestRateResponse.InterestRate,
+            InterestRate = await GetInterestRate(client),
             CurrentMonth = DateOnly.ParseExact(request.StartDate, "yyyy-MM-dd")
         };
 
@@ -53,9 +52,24 @@ public class CreditModule : ICarterModule
             CreditId = newCredit.Id
         });
     }
+    
+    private static async Task<decimal> GetInterestRate(DaprClient client)
+    {
+        try
+        {
+            var interestRateResponse = await client.InvokeMethodAsync<GetInterestRateResponse>(HttpMethod.Get,"interest-rate-api", "v1/interest-rates");
+            return interestRateResponse.InterestRate;
+        }
+        catch (Exception e)
+        {
+            Log.Warning("Failed to get interest rate, using default value");
+            return 0.1m;
+        }
+    }
 
     private static async Task<IResult> GetCredit(HttpContext context, string id, DaprClient client)
     {
+        Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
         var (credit, _) = await GetCreditState(client, id);
         if (credit == null)
@@ -66,6 +80,7 @@ public class CreditModule : ICarterModule
     private static async Task<IResult> AddTransaction(HttpContext context, string id, AddTransactionRequest request,
         DaprClient client, CreditMetrics metrics)
     {
+        Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
@@ -102,6 +117,8 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> GetTransactions(HttpContext context, string id, DaprClient client)
     {
+        Baggage.SetBaggage("creditId", id);
+        Activity.Current?.AddTag("creditId", id);
         var (credit, _) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
@@ -110,6 +127,7 @@ public class CreditModule : ICarterModule
 
     private static async Task<IResult> CloseMonth(HttpContext context, string id, DaprClient client)
     {
+        Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)

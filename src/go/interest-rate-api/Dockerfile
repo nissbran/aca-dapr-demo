@@ -16,6 +16,7 @@ COPY --from=builder /build/interest-rate-api ./
 
 ENV GIN_MODE=release
 ENV LISTENING_PORT=80
+ENV APP_VERSION=$DOCKER_TAG
 
 EXPOSE 80
 

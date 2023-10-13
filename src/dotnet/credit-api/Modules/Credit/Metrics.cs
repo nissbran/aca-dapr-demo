@@ -12,6 +12,7 @@ internal class CreditMetrics : IDisposable
     private readonly ObservableGauge<long> _creditsCreatedGauge;
     private readonly Counter<long> _creditsTransactionValueAddedCounter;
     private readonly ObservableGauge<long> _creditsTransactionValueAddedGauge;
+    private readonly Histogram<long> _creditsTransactionValueHistogram;
     private long _creditsCreated;
     private long _creditsTransactionValueSum;
 
@@ -21,9 +22,10 @@ internal class CreditMetrics : IDisposable
         _creditsCreatedCounter = _meter.CreateCounter<long>("credits.created");
         _creditsCreatedGauge = _meter.CreateObservableGauge("credits.created", 
             () => Interlocked.Exchange(ref _creditsCreated, 0));
-        _creditsTransactionValueAddedCounter = _meter.CreateCounter<long>("credits.transaction.value.added", "SEK");
+        _creditsTransactionValueAddedCounter = _meter.CreateCounter<long>("credits.transaction.value.added");
         _creditsTransactionValueAddedGauge = _meter.CreateObservableGauge("credits.transaction.value.added", 
             () => Interlocked.Exchange(ref _creditsTransactionValueSum, 0), "SEK");
+        _creditsTransactionValueHistogram = _meter.CreateHistogram<long>("credits.transaction.value.histogram");
     }
     
     public void IncrementCreditsCreated()
@@ -32,8 +34,9 @@ internal class CreditMetrics : IDisposable
         Interlocked.Increment(ref _creditsCreated);
     }
     
-    public void AddTransactionValue(long value)
+    public void AddTransactionValue(long value, string currency)
     {
+        _creditsTransactionValueHistogram.Record(value, new("currency", currency), new("type", "debit"));
         _creditsTransactionValueAddedCounter.Add(value);
         Interlocked.Add(ref _creditsTransactionValueSum, value);
     }

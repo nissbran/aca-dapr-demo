@@ -7,11 +7,11 @@ receivers:
     config:
       scrape_configs:
       - job_name: 'kafka'
-        scrape_interval: 10s
+        scrape_interval: 1m
         static_configs:
         - targets: ['kafka-exporter:9308']
       - job_name: 'redis'
-        scrape_interval: 10s
+        scrape_interval: 1m
         static_configs:
         - targets: ['redis-exporter:9121']
 extensions:
@@ -21,36 +21,43 @@ extensions:
   zpages:
     endpoint: :55679
 processors:
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
   attributes:
     actions:
       - key: environment
         value: "Docker"
         action: insert
+  probabilistic_sampler:
+    hash_seed: 11
+    sampling_percentage: 25
 exporters:
-  logging:
-  #  verbosity: detailed
+  debug:
   azuremonitor:
     endpoint: "https://dc.services.visualstudio.com/v2/track"
     instrumentation_key: $APPLICATION_INSIGHTS_INSTRUMENTATION_KEY
+  otlphttp/seq:
+    endpoint: http://seq:5341/ingest/otlp
   zipkin:
-    endpoint: "http://zipkin:9411/api/v2/spans"
-  prometheusremotewrite:
-    endpoint: "http://otel-prom-remote-write:8081/api/v1/write"
+    endpoint: http://zipkin:9411/api/v2/spans
+  # prometheusremotewrite:
+  #   endpoint: "http://otel-prom-remote-write:8081/api/v1/write"
   prometheusremotewrite/local:
-    endpoint: "http://prometheus:9090/api/v1/write"
+    endpoint: http://prometheus:9090/api/v1/write
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes]
-      exporters: [logging, zipkin, azuremonitor]
+      processors: [probabilistic_sampler, attributes, batch]
+      exporters: [debug, zipkin, azuremonitor]
     metrics:
       receivers: [otlp, prometheus]
-      processors: [attributes]
-      exporters: [logging, prometheusremotewrite, prometheusremotewrite/local]
+      processors: [attributes, batch]
+      exporters: [debug, prometheusremotewrite/local]
     logs:
       receivers: [otlp]
-      processors: [attributes]
-      exporters: [logging, azuremonitor]
+      processors: [attributes, batch]
+      exporters: [debug, otlphttp/seq, azuremonitor]
   

@@ -3,48 +3,41 @@ param name string
 param location string = resourceGroup().location
 
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+var sbDataOwnerRole = resourceId('Microsoft.Authorization/roleDefinitions', '090c5cfd-751d-490a-894a-3ce6f1109419')
 
 // Existing resources ---------------------------------------------------------
-resource acr 'Microsoft.ContainerRegistry/registries@2021-09-01' existing = {
-  name: 'acr${name}'
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: 'acrdapr${name}'
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2022-11-01-preview' existing = {
+resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: 'acaenv${name}'
 }
 
-resource sb_ns 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' existing = {
+resource sb_ns 'Microsoft.ServiceBus/namespaces@2021-11-01' existing = {
   name: 'sb${name}'
 }
 
-resource sbSharedKey 'Microsoft.ServiceBus/namespaces/authorizationRules@2021-11-01' existing = {
+resource sbSharedKey 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11-01' existing = {
   name: 'credits'
   parent: sb_ns
 }
 
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' existing = {
+  name: 'cosmos${name}'
+}
+
+resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2023-04-15' existing = {
+  name: guid('sql-rw-role-definition', cosmos.id)
+  parent: cosmos
+}
+
 // Credit api -----------------------------------------------------------------
-resource credit_api_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: 'id-credit-api'
-  location: location
-}
-
-resource credit_api_uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, credit_api_uai.id, acrPullRole)
-  properties: {
-    roleDefinitionId: acrPullRole
-    principalId: credit_api_uai.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
+resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
   name: 'credit-api'
   location: location
   identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${credit_api_uai.id}': {}
-    }
+    type: 'SystemAssigned'
   }
   properties: {
     managedEnvironmentId: aca_env.id
@@ -58,9 +51,16 @@ resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
         enabled: true
         appId: 'credit-api'
       }
+      secrets: [
+        {
+          name: 'registry-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
       registries: [
         {
-          identity: credit_api_uai.id
+          username: acr.name
+          passwordSecretRef: 'registry-password'
           server: acr.properties.loginServer
         }
       ]
@@ -79,6 +79,10 @@ resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
               name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
               value: 'http/protobuf'
             }
+            {
+              name: 'USE_CONSOLE_LOG_OUTPUT'
+              value: 'true'
+            }
           ]
           resources:{
             cpu: json('.25')
@@ -95,29 +99,40 @@ resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
   }
 }
 
-// Booking processor ----------------------------------------------------------
-resource booking_processor_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: 'id-booking-processor'
-  location: location
-}
-
-resource booking_processor_uaiRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, booking_processor_uai.id, acrPullRole)
+resource credit_api_pull_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, credit_api.name, acrPullRole)
   properties: {
     roleDefinitionId: acrPullRole
-    principalId: booking_processor_uai.properties.principalId
+    principalId: credit_api.identity.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
-resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
+resource credit_api_cosmos_assignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(cosmos.id, credit_api.name, sqlRoleDefinition.id)
+  parent: cosmos
+  properties: {
+    roleDefinitionId: sqlRoleDefinition.id
+    principalId: credit_api.identity.principalId
+    scope: cosmos.id
+  }
+}
+
+resource credit_api_sb_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(sb_ns.id, credit_api.name, sbDataOwnerRole)
+  properties: {
+    roleDefinitionId: sbDataOwnerRole
+    principalId: credit_api.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Booking processor ----------------------------------------------------------
+resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
   name: 'booking-processor'
   location: location
   identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${booking_processor_uai.id}': {}
-    }
+    type: 'SystemAssigned'
   }
   properties: {
     managedEnvironmentId: aca_env.id
@@ -133,10 +148,15 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
           name: 'sb-connection-string'
           value: sbSharedKey.listKeys().primaryConnectionString
         }
+        {
+          name: 'registry-password'
+          value: acr.listCredentials().passwords[0].value
+        }
       ]
       registries: [
         {
-          identity: booking_processor_uai.id
+          username: acr.name
+          passwordSecretRef: 'registry-password'
           server: acr.properties.loginServer
         }
       ]
@@ -144,7 +164,7 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
     template: {
       containers: [
         {
-          image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
+          image: '${acr.name}.azurecr.io/credits/booking-processor:0.2'
           name: 'booking-processor'
           env: [
             {
@@ -154,6 +174,10 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
             {
               name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
               value: 'http/protobuf'
+            }
+            {
+              name: 'USE_CONSOLE_LOG_OUTPUT'
+              value: 'true'
             }
           ]
           resources:{
@@ -188,6 +212,97 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
             }
           }
         ]
+      }
+    }
+  }
+}
+
+resource booking_processor_pull_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, booking_processor.name, acrPullRole)
+  properties: {
+    roleDefinitionId: acrPullRole
+    principalId: booking_processor.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource booking_processor_cosmos_assignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(cosmos.id, booking_processor.name, sqlRoleDefinition.id)
+  parent: cosmos
+  properties: {
+    roleDefinitionId: sqlRoleDefinition.id
+    principalId: booking_processor.identity.principalId
+    scope: cosmos.id
+  }
+}
+
+resource booking_processor_sb_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(sb_ns.id, booking_processor.name, sbDataOwnerRole)
+  properties: {
+    roleDefinitionId: sbDataOwnerRole
+    principalId: booking_processor.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Interest rate api ----------------------------------------------------------
+resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
+  name: 'interest-rate-api'
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    managedEnvironmentId: aca_env.id
+    configuration: {
+      activeRevisionsMode: 'single'
+      dapr: {
+        appId: 'interest-rate-api'
+        appPort: 80
+        enabled: true
+      }
+      secrets: [
+        {
+          name: 'registry-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+      registries: [
+        {
+          username: acr.name
+          passwordSecretRef: 'registry-password'
+          server: acr.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          image: '${acr.name}.azurecr.io/credits/interest-rate-api:0.2'
+          name: 'interest-rate-api'
+          env: [
+            {
+              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
+              value: 'otel-collector-app'
+            }
+            {
+              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
+              value: 'http/protobuf'
+            }
+            {
+              name: 'INSECURE_MODE'
+              value: 'true'
+            }
+          ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
       }
     }
   }

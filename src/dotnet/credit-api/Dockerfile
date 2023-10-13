@@ -16,5 +16,6 @@ RUN dotnet publish "CreditApi.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
+ENV APP_VERSION=$DOCKER_TAG
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "CreditApi.dll"]

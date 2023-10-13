@@ -31,6 +31,9 @@ az acr build --registry acr<Your name> --image credits/credit-api:0.1 . -f .\Doc
 cd ..
 cd booking-processor
 az acr build --registry acr<Your name> --image credits/booking-processor:0.1 . -f .\Dockerfile
+cd ../..
+cd go/interest-rate-api
+az acr build --registry acr<Your name> --image credits/interest-rate-api:0.1 . -f .\Dockerfile
 ```
 
 Then deploy the applications.

@@ -1,11 +1,9 @@
-GET http://localhost:5010/v1/credits/123314
+@hostname = localhost
+@port = 5010
+@host = http://{{hostname}}:{{port}}
 
-### 
-GET https://credit-api.agreeablebay-534d13f5.norwayeast.azurecontainerapps.io/v1/credits/123314
 
-###
-
-POST http://localhost:5010/v1/credits
+POST {{host}}/v1/credits
 content-type: application/json
 
 {
@@ -15,56 +13,19 @@ content-type: application/json
 
 ###
 
-POST https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits
-content-type: application/json
-
-{
-    "name": "test",
-    "startDate": "2023-01-01"
-}
-
-###
-
-POST https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits/fd2b42b1-233a-4fd9-9ecf-44aecec52eb5/transactions
-content-type: application/json
-
-{
-    "value": 10,
-    "transactionDate": "2023-01-04"
-}
-
-###
-
-PUT https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io/v1/credits/fd2b42b1-233a-4fd9-9ecf-44aecec52eb5/close-month
-content-type: application/json
-
-{
-}
-
-###
-
-POST http://localhost:5010/v1/credits/8d840d17-da9d-4b35-b289-9315f33755ba/transactions
+POST {{host}}/v1/credits/8e5a7243-c5c6-4fa3-a351-9fd31f2e086f/transactions
 content-type: application/json
 
 {
     "value": 10,
     "transactionDate": "2022-02-06"
 }
-###
-
-GET http://localhost:5010/v1/credits/f8ad60d4-9ade-49e3-b8ae-6256365b8f07/transactions
 
 ###
+POST {{host}}/v1/credits/b84bcc62-8e15-4e5f-a7ca-50b029644b18/transactions
+content-type: application/json
 
-GET http://localhost:5041/
-
-###
-GET http://localhost:5010/metrics
-
-### 
-GET http://localhost:5012/metrics
-
-###
-GET http://localhost:5041/
-
-###
+{
+    "value": 10,
+    "transactionDate": "2022-02-06"
+}
