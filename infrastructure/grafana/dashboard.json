@@ -9,8 +9,8 @@
       "pluginName": "Azure Monitor"
     },
     {
-      "name": "DS_MANAGED_PROMETHEUS",
-      "label": "Managed_Prometheus",
+      "name": "DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS",
+      "label": "Managed_Prometheus_local-prom-ws",
       "description": "",
       "type": "datasource",
       "pluginId": "prometheus",
@@ -35,7 +35,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "9.4.12"
+      "version": "9.5.8"
     },
     {
       "type": "datasource",
@@ -145,7 +145,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 4,
+        "w": 5,
         "x": 0,
         "y": 1
       },
@@ -164,7 +164,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.12",
+      "pluginVersion": "9.5.8",
       "targets": [
         {
           "azureMonitor": {
@@ -233,7 +233,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS}"
+        "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
       },
       "description": "",
       "fieldConfig": {
@@ -271,8 +271,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 4,
-        "x": 4,
+        "w": 6,
+        "x": 5,
         "y": 1
       },
       "id": 41,
@@ -290,16 +290,16 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.12",
+      "pluginVersion": "9.5.8",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum_over_time(credits_created[$__range])",
+          "expr": "sum(sum_over_time(credits_created[$__range]))",
           "instant": true,
           "legendFormat": "Credits created",
           "range": false,
@@ -308,10 +308,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
-          "expr": "sum_over_time(credits_transaction_value_added_sek[$__range])",
+          "expr": "sum(sum_over_time(credits_transaction_value_added_sek[$__range]))",
           "hide": false,
           "legendFormat": "Transactions in SEK",
           "range": true,
@@ -324,7 +324,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS}"
+        "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
       },
       "description": "",
       "fieldConfig": {
@@ -350,7 +350,7 @@
       "gridPos": {
         "h": 5,
         "w": 6,
-        "x": 8,
+        "x": 11,
         "y": 1
       },
       "id": 34,
@@ -368,12 +368,12 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.12",
+      "pluginVersion": "9.5.8",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -386,7 +386,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -400,7 +400,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -413,6 +413,112 @@
         }
       ],
       "title": "Events processed",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${DS_AZURE_MONITOR}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 17,
+        "y": 1
+      },
+      "id": 43,
+      "links": [],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.8",
+      "targets": [
+        {
+          "azureMonitor": {
+            "aggregation": "Count",
+            "alias": "credit api",
+            "allowedTimeGrainsMs": [
+              60000,
+              300000,
+              900000,
+              1800000,
+              3600000,
+              21600000,
+              43200000,
+              86400000
+            ],
+            "customNamespace": "microsoft.insights/components",
+            "dimensionFilters": [
+              {
+                "dimension": "cloud/roleName",
+                "filters": [
+                  "credit-api"
+                ],
+                "operator": "eq"
+              }
+            ],
+            "metricName": "dependencies/failed",
+            "metricNamespace": "microsoft.insights/components",
+            "region": "swedencentral",
+            "resources": [
+              {
+                "metricNamespace": "microsoft.insights/components",
+                "region": "swedencentral",
+                "resourceGroup": "$rg",
+                "resourceName": "$appinsights",
+                "subscription": "$sub"
+              }
+            ],
+            "timeGrain": "auto",
+            "top": "50"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${DS_AZURE_MONITOR}"
+          },
+          "hide": false,
+          "queryType": "Azure Monitor",
+          "refId": "A",
+          "subscription": "$sub"
+        }
+      ],
+      "title": "Exceptions",
       "type": "stat"
     },
     {
@@ -475,7 +581,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 7,
+        "w": 11,
         "x": 0,
         "y": 6
       },
@@ -533,7 +639,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS}"
+        "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
       },
       "description": "",
       "fieldConfig": {
@@ -591,8 +697,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 7,
-        "x": 7,
+        "w": 11,
+        "x": 11,
         "y": 6
       },
       "id": 39,
@@ -613,7 +719,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "expr": "sum(events_start_booking_consumed)",
@@ -624,7 +730,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "expr": "sum(events_transaction_booking_consumed)",
@@ -636,7 +742,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS}"
+            "uid": "${DS_MANAGED_PROMETHEUS_LOCAL-PROM-WS}"
           },
           "editorMode": "code",
           "expr": "sum(events_closed_month_consumed)",
@@ -709,8 +815,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 7,
+        "h": 9,
+        "w": 11,
         "x": 0,
         "y": 14
       },
@@ -872,9 +978,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 7,
-        "x": 7,
+        "h": 9,
+        "w": 11,
+        "x": 11,
         "y": 14
       },
       "id": 42,
@@ -1042,9 +1148,9 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 7,
+        "w": 11,
         "x": 0,
-        "y": 22
+        "y": 23
       },
       "id": 36,
       "options": {
@@ -1212,9 +1318,9 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 7,
-        "x": 7,
-        "y": 22
+        "w": 11,
+        "x": 11,
+        "y": 23
       },
       "id": 37,
       "options": {
@@ -1274,9 +1380,9 @@
     "list": [
       {
         "current": {
-          "selected": true,
-          "text": "Managed_Prometheus",
-          "value": "Managed_Prometheus"
+          "selected": false,
+          "text": "Managed_Prometheus_local-prom-ws",
+          "value": "Managed_Prometheus_local-prom-ws"
         },
         "hide": 0,
         "includeAll": false,
@@ -1409,13 +1515,13 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Aca demo Prom",
   "uid": "aEcyRC_4z",
-  "version": 11,
+  "version": 21,
   "weekStart": ""
 }
