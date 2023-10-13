@@ -1,4 +1,5 @@
 ﻿using CreditApi.Modules.Credit;
+using CreditApi.Telemetry;
 using Serilog;
 
 namespace CreditApi;
@@ -27,6 +28,11 @@ internal static class ApplicationConfiguration
 
         app.UseHealthChecks("/healthz");
         app.UseSerilogRequestLogging();
+
+        if (ObservabilityConfiguration.UsePrometheusEndpoint)
+        {
+            app.MapPrometheusScrapingEndpoint().RequireHost("*:9090");
+        }
         
         CreditModule.MapRoutes(app);
         

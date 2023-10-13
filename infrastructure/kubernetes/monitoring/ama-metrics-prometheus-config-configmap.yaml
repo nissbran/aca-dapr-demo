@@ -6,7 +6,7 @@ metadata:
 data:
   prometheus-config: |-
     global:
-      scrape_interval: 15s
+      scrape_interval: 1m
     scrape_configs:
     - job_name: 'kafka-metrics'
       static_configs:

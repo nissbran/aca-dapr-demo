@@ -1,5 +1,4 @@
 param name string
-param acrname string = 'acr${name}'
 param nodeResourceGroup string = 'rg-aks-${name}-nodes'
 param location string = resourceGroup().location
 
@@ -11,8 +10,15 @@ var agentVMSize = 'Standard_D4as_v5'
 var acrPullRole = resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 var managedIdentityOperatorRole = resourceId('Microsoft.Authorization/roleDefinitions', 'f1a07417-d97a-45cb-824c-7a7467783830')
 
-resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
-  name: acrname
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: 'acrdapraks${name}'
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: false
+  }
 }
 
 resource aks_uai 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -103,6 +109,5 @@ resource aks 'Microsoft.ContainerService/managedClusters@2023-08-01' = {
     autoUpgradeProfile: {
       upgradeChannel: 'stable'
     }
-
   }
 }

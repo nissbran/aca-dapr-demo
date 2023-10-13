@@ -19,6 +19,9 @@ spec:
         dapr.io/enabled: "true"
         dapr.io/app-id: "booking-processor"
         dapr.io/app-port: "80"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: booking-processor

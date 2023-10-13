@@ -21,13 +21,11 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   location: location
   properties: {
     Application_Type: 'web'
-    Flow_Type: 'Redfield'
-    Request_Source: 'CustomDeployment'
     WorkspaceResourceId: loganalytics_workspace.id
   }
 }
 
-resource prometheus_workspace 'Microsoft.Monitor/accounts@2021-06-03-preview' = {
+resource prometheus_workspace 'Microsoft.Monitor/accounts@2023-04-03' = {
   name: 'prom-workspace-${name}'
   location: location
   

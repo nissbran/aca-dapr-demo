@@ -8,10 +8,14 @@ using Serilog.Sinks.SystemConsole.Themes;
 
 namespace BookingProcessor.Telemetry;
 
-public static class ObservabilityConfiguration
+internal static class ObservabilityConfiguration
 {
+    internal static bool UsePrometheusEndpoint { get; private set; }
+    
     public static WebApplicationBuilder ConfigureTelemetry(this WebApplicationBuilder builder, string serviceNamespace, string application, string team)
     {
+        UsePrometheusEndpoint = builder.Configuration.GetValue<bool>("USE_PROMETHEUS_ENDPOINT");
+        
         var version = builder.Configuration["APP_VERSION"] ?? "0.1";
         var resourceBuilder = ResourceBuilder.CreateDefault().AddService(
             serviceName: application,
@@ -79,6 +83,11 @@ public static class ObservabilityConfiguration
             })
             .WithMetrics(metricsBuilder =>
             {
+                if (UsePrometheusEndpoint)
+                {
+                    metricsBuilder.AddPrometheusExporter();
+                }
+                
                 metricsBuilder
                     .AddOtlpExporter()
                     .AddConsumedEventsMetrics()

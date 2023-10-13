@@ -19,6 +19,10 @@ internal static class ApplicationConfiguration
         app.MapSubscribeHandler();
         app.MapControllers();
         app.UseHealthChecks("/healthz");
+        if (ObservabilityConfiguration.UsePrometheusEndpoint)
+        {
+            app.MapPrometheusScrapingEndpoint().RequireHost("*:9090");
+        }
         
         return app;
     }
