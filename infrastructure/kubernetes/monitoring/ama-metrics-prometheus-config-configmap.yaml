@@ -15,6 +15,9 @@ data:
     - job_name: 'kubernetes-pods'
       kubernetes_sd_configs:
       - role: pod
+      namespaces:
+        names:
+        - credits
       relabel_configs:
       # Scrape only pods with the annotation: prometheus.io/scrape = true
       - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]

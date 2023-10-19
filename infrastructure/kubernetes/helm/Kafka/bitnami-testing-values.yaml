@@ -1,11 +1,29 @@
 # This config is for testing only. This is a inmemory kafka for testing
-numPartitions: 30
-
-replicaCount: 1
-persistence:
-  enabled: false
-zookeeper:
+listeners:
+  controller:
+    protocol: PLAINTEXT
+  client:
+    protocol: PLAINTEXT
+  interbroker:
+    protocol: PLAINTEXT
+  external:
+    protocol: PLAINTEXT
+extraEnvVars: 
+- name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+  value: "1"
+controller:
   replicaCount: 1
+  persistence:
+    enabled: false  
+provisioning:
+  enabled: true
+  #numPartitions: 30
+  #replicationFactor: 1
+  topics:
+  - name: booking-processor
+    partitions: 30
+    replicationFactor: 1
+broker:
   persistence:
     enabled: false
 metrics:

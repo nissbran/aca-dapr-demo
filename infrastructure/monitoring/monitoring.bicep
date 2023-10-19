@@ -28,7 +28,6 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
 resource prometheus_workspace 'Microsoft.Monitor/accounts@2023-04-03' = {
   name: 'prom-workspace-${name}'
   location: location
-  
 }
 
 resource grafana 'Microsoft.Dashboard/grafana@2022-08-01' = {

@@ -14,6 +14,7 @@ services:
       - 5010:80
     environment:
       <<: *common-variables
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
     depends_on:
       otel-collector:
         condition: service_started
@@ -44,6 +45,7 @@ services:
       - 5011:80
     environment:
       <<: *common-variables
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
     depends_on:
       otel-collector:
         condition: service_started
@@ -74,6 +76,7 @@ services:
       - 5012:80
     environment:
       <<: *common-variables
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
     depends_on:
       otel-collector:
         condition: service_started
@@ -122,6 +125,41 @@ services:
       otel-collector:
         condition: service_started
     network_mode: "service:interest-rate-api"
+
+    
+  currency-rate-api:
+    image: ${DOCKER_REGISTRY-}java-currency-rate-api
+    build:
+      context: src\java\currency-rate-api
+    ports:
+      - 5020:8080
+    environment:
+      OTEL_SERVICE_NAME: "currency-rate-api"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      JAVA_TOOL_OPTIONS: "-javaagent:opentelemetry-javaagent.jar"
+      OTEL_RESOURCE_ATTRIBUTES: "application=currency-rate-api,team=team java"
+      # APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      # JAVA_TOOL_OPTIONS: "-javaagent:applicationinsights-agent-3.4.17.jar"
+    depends_on:
+      otel-collector:
+        condition: service_started
+  currency-rate-api-dapr:
+    image: daprio/daprd:1.11.4-mariner
+    command: ["./daprd",
+     "-app-id", "currency-rate-api",
+     "-app-port", "8080",
+     "-resources-path", "./components"]   
+    volumes:
+      - "./dapr/docker-components/:/components"
+    depends_on:
+      currency-rate-api:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    network_mode: "service:currency-rate-api"
 
 ## ----------------- Infra
 
@@ -180,7 +218,7 @@ services:
   kafka-exporter:
     image: bitnami/kafka-exporter:1.7.0
     restart: unless-stopped
-    command: --kafka.server=kafka:29092 --zookeeper.server=zookeeper:2181 #--log.enable-sarama #--concurrent.enable #--verbosity=2
+    command: --kafka.server=kafka:29092  #--log.enable-sarama #--concurrent.enable #--verbosity=2
     depends_on:
       kafka:
         condition: service_healthy
@@ -206,7 +244,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.86.0
     command: ["--config=conf/config.yaml"]
     environment:
-      - APPLICATION_INSIGHTS_INSTRUMENTATION_KEY=${APPLICATION_INSIGHTS_INSTRUMENTATION_KEY}
+      - APPLICATIONINSIGHTS_INSTRUMENTATION_KEY=${APPLICATIONINSIGHTS_INSTRUMENTATION_KEY}
     volumes:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
     depends_on:

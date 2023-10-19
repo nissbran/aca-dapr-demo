@@ -50,41 +50,77 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
   name: 'default'
 }
 
-resource eventHubNs 'Microsoft.EventHub/namespaces@2021-11-01' = {
-  name: 'eventhubns${name}'
+resource sb_ns 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
+  name: 'sb${name}'
   location: location
   sku: {
     name: 'Standard'
     tier: 'Standard'
-    capacity: 1
   }
-  properties: {
-    isAutoInflateEnabled: false
-    maximumThroughputUnits: 0
+
+  resource topic 'topics' = {
+    name: 'bookings'
+    properties: {
+      enablePartitioning: true
+      supportOrdering: true
+    }
+
+    resource subscription 'subscriptions' = {
+      name: 'booking-processor'
+      properties: {
+        requiresSession: true
+        deadLetteringOnFilterEvaluationExceptions: true
+        deadLetteringOnMessageExpiration: true
+        maxDeliveryCount: 10
+      }
+    }
   }
 }
 
-resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2021-11-01' = {
-  parent: eventHubNs
-  name: 'bookings'
-  properties: {
-    messageRetentionInDays: 7
-    partitionCount: 30
-  }
-}
-
-resource eventHubConsumerBookingProcessor 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2021-11-01' = {
-  parent: eventHub
-  name: 'booking-processor'
-}
-
-resource eventHubSharedKey 'Microsoft.EventHub/namespaces/authorizationRules@2021-11-01' = {
-  name: 'string'
-  parent: eventHubNs
+resource sbSharedKey 'Microsoft.ServiceBus/namespaces/authorizationRules@2021-11-01' = {
+  name: 'credits'
+  parent: sb_ns
   properties: {
     rights: [ 'Send', 'Listen', 'Manage' ]
   }
 }
+
+
+// resource eventHubNs 'Microsoft.EventHub/namespaces@2021-11-01' = {
+//   name: 'eventhubns${name}'
+//   location: location
+//   sku: {
+//     name: 'Standard'
+//     tier: 'Standard'
+//     capacity: 1
+//   }
+//   properties: {
+//     isAutoInflateEnabled: false
+//     maximumThroughputUnits: 0
+//   }
+// }
+
+// resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2021-11-01' = {
+//   parent: eventHubNs
+//   name: 'bookings'
+//   properties: {
+//     messageRetentionInDays: 7
+//     partitionCount: 30
+//   }
+// }
+
+// resource eventHubConsumerBookingProcessor 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2021-11-01' = {
+//   parent: eventHub
+//   name: 'booking-processor'
+// }
+
+// resource eventHubSharedKey 'Microsoft.EventHub/namespaces/authorizationRules@2021-11-01' = {
+//   name: 'string'
+//   parent: eventHubNs
+//   properties: {
+//     rights: [ 'Send', 'Listen', 'Manage' ]
+//   }
+// }
 
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
@@ -153,7 +189,7 @@ resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contai
   }
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2022-10-01' = {
+resource aca_env 'Microsoft.App/managedEnvironments@2022-11-01-preview' = {
   name: 'acaenv${name}'
   location: location
   properties: {
@@ -169,29 +205,52 @@ resource aca_env 'Microsoft.App/managedEnvironments@2022-10-01' = {
   }
 }
 
+// resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
+//   name: 'pubsub'
+//   parent: aca_env
+//   properties: {
+//     componentType: 'pubsub.azure.eventhubs'
+//     version: 'v1'
+//     initTimeout: '30s'
+//     metadata: [
+//       {
+//         name: 'connectionString'
+//         value: eventHubSharedKey.listKeys().primaryConnectionString
+//       }
+//       {
+//         name: 'storageAccountName'
+//         value: storageAccount.name
+//       }
+//       {
+//         name: 'storageAccountKey'
+//         value: storageAccount.listKeys().keys[0].value
+//       }
+//       {
+//         name: 'storageContainerName'
+//         value: 'eventhub-subscriptions'
+//       }
+//     ]
+//     scopes: [
+//       'credit-api', 'booking-processor'
+//     ]
+//   }
+// }
+
 resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2022-10-01' = {
   name: 'pubsub'
   parent: aca_env
   properties: {
-    componentType: 'pubsub.azure.eventhubs'
+    componentType: 'pubsub.azure.servicebus.topics'
     version: 'v1'
     initTimeout: '30s'
     metadata: [
       {
         name: 'connectionString'
-        value: eventHubSharedKey.listKeys().primaryConnectionString
+        value: sbSharedKey.listKeys().primaryConnectionString
       }
       {
-        name: 'storageAccountName'
-        value: storageAccount.name
-      }
-      {
-        name: 'storageAccountKey'
-        value: storageAccount.listKeys().keys[0].value
-      }
-      {
-        name: 'storageContainerName'
-        value: 'eventhub-subscriptions'
+        name: 'maxActiveMessages'
+        value: '1'
       }
     ]
     scopes: [
@@ -312,10 +371,6 @@ resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
           image: '${acr.name}.azurecr.io/credits/credit-api:0.1'
           name: 'credit-api'
           env: [
-            // {
-            //   name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
-            //   value: appinsights.properties.ConnectionString
-            // }
             {
               name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
               value: 'http://otel-collector-app'
@@ -325,6 +380,10 @@ resource credit_api 'Microsoft.App/containerApps@2022-10-01' = {
               value: 'http/protobuf'
             }
           ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
         }
       ]
       scale: {
@@ -372,12 +431,8 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
       }
       secrets: [
         {
-          name: 'eventhub-connection-string'
-          value: '${eventHubSharedKey.listKeys().primaryConnectionString};EntityPath=${eventHub.name}'
-        }
-        {
-          name: 'blobstorage-connection-string'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+          name: 'sb-connection-string'
+          value: sbSharedKey.listKeys().primaryConnectionString
         }
       ]
       registries: [
@@ -393,10 +448,6 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
           image: '${acr.name}.azurecr.io/credits/booking-processor:0.1'
           name: 'booking-processor'
           env: [
-            // {
-            //   name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
-            //   value: appinsights.properties.ConnectionString
-            // }
             {
               name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
               value: 'http://otel-collector-app'
@@ -406,31 +457,34 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
               value: 'http/protobuf'
             }
           ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
         }
       ]
       scale: {
         minReplicas: 1
-        maxReplicas: 4
+        maxReplicas: 10
         rules: [
           {
-            name: 'eventhub-scale-rule'
+            name: 'sb-scale-rule'
             custom: {
-              type: 'azure-eventhub'
+              type: 'azure-servicebus'
               auth: [
                 {
-                  secretRef: 'eventhub-connection-string'
+                  secretRef: 'sb-connection-string'
                   triggerParameter: 'connection'
-                }
-                {
-                  secretRef: 'blobstorage-connection-string'
-                  triggerParameter: 'storageConnection'
                 }
               ]
               metadata: {
-                consumerGroup: 'booking-processor'
-                unprocessedEventThreshold: '64'
-                checkpointStrategy: 'blobMetadata'
-                blobContainer: 'eventhub-subscriptions'
+                topicName: 'bookings'
+                subscriptionName: 'booking-processor'
+                queueLength: '64'
+                // consumerGroup: 'booking-processor'
+                // unprocessedEventThreshold: '64'
+                // checkpointStrategy: 'blobMetadata'
+                // blobContainer: 'eventhub-subscriptions'
               }
             }
           }
@@ -439,7 +493,6 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
     }
   }
 }
-
 
 // resource interest_rate_api 'Microsoft.App/containerApps@2022-10-01' = {
 //   name: 'interest-rate-api'
@@ -473,7 +526,7 @@ resource booking_processor 'Microsoft.App/containerApps@2022-10-01' = {
 //           name: 'interest-rate-api'
 //           env: [
 //             {
-//               name: 'APPLICATION_INSIGHTS_CONNECTION_STRING'
+//               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
 //               value: appinsights.properties.ConnectionString
 //             }
 //             {

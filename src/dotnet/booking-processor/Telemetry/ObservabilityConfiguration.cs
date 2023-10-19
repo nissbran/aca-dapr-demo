@@ -26,9 +26,6 @@ internal static class ObservabilityConfiguration
         {
             var serilogConfiguration = configuration
                 .ReadFrom.Configuration(context.Configuration)
-                .Enrich.WithProperty("namespace", serviceNamespace)
-                .Enrich.WithProperty("application", application)
-                .Enrich.WithProperty("team", team)
                 .Filter.With<IgnoredEndpointsLogFilter>()
                 .Enrich.FromLogContext();
 
@@ -54,6 +51,13 @@ internal static class ObservabilityConfiguration
                     };
                 });
             }
+            else
+            {
+                serilogConfiguration
+                    .Enrich.WithProperty("namespace", serviceNamespace)
+                    .Enrich.WithProperty("application", application)
+                    .Enrich.WithProperty("team", team);
+            }
 
             var seqEndpoint = context.Configuration["SEQ_ENDPOINT"];
             if (!string.IsNullOrEmpty(seqEndpoint))
@@ -62,7 +66,7 @@ internal static class ObservabilityConfiguration
             }
         });
 
-        var appInsightsConnectionString = builder.Configuration["APPLICATION_INSIGHTS_CONNECTION_STRING"];
+        var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracingBuilder =>
@@ -71,7 +75,9 @@ internal static class ObservabilityConfiguration
                     tracingBuilder.AddAzureMonitorTraceExporter(options =>
                     {
                         options.ConnectionString = appInsightsConnectionString;
-                        options.SamplingRatio = 0.1f; // This is sampled by hashing the traceid
+                        // This is sampled by hashing the traceid with hash seed 5381
+                        // This is the same in the java sampler as well
+                        options.SamplingRatio = 0.1f; 
                     });
                 
                 tracingBuilder

@@ -28,7 +28,7 @@ exporters:
   debug:
   azuremonitor:
     endpoint: "https://swedencentral-0.in.applicationinsights.azure.com/v2/track"
-    instrumentation_key: $APPLICATION_INSIGHTS_INSTRUMENTATION_KEY
+    instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
   prometheusremotewrite:
     endpoint: "http://localhost:8081/api/v1/write"
 service:

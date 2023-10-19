@@ -6,9 +6,9 @@ using System.Text.Json.Serialization;
 
 var localCreditApi = "http://localhost:5010";
 var localBooking = "http://localhost:5011";
-var azure = "https://credit-api.redglacier-d4100b70.norwayeast.azurecontainerapps.io";
-var client = new HttpClient() { BaseAddress = new Uri(localCreditApi) };
-const int numberOfTasks = 8;
+var azure = "azure_url";
+var client = new HttpClient() { BaseAddress = new Uri(azure) };
+const int numberOfTasks = 10;
 var tasks = new Task[numberOfTasks];
 var creditIds = new ConcurrentBag<string>();
 
@@ -45,6 +45,7 @@ for (int i = 0; i < numberOfTasks; i++)
                     var response = await client.PostAsJsonAsync($"{location}/transactions", new
                     {
                         Value = 10,
+                        Currency = "SEK",
                         TransactionDate = $"2022-{k+1:00}-{l+1:00}"
                         //TransactionDate = $"2022-{k+1:00}-10"
                     });

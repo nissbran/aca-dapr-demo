@@ -254,6 +254,7 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
   }
   properties: {
     managedEnvironmentId: aca_env.id
+    workloadProfileName: 'consumption'
     configuration: {
       activeRevisionsMode: 'single'
       dapr: {
@@ -292,6 +293,89 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'INSECURE_MODE'
               value: 'true'
+            }
+          ]
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+// 
+resource currency_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
+  name: 'currency-rate-api'
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    managedEnvironmentId: aca_env.id
+    configuration: {
+      activeRevisionsMode: 'single'
+      dapr: {
+        appId: 'currency-rate-api'
+        appPort: 8080
+        enabled: true
+      }
+      secrets: [
+        {
+          name: 'registry-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+      registries: [
+        {
+          username: acr.name
+          passwordSecretRef: 'registry-password'
+          server: acr.properties.loginServer
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          image: '${acr.name}.azurecr.io/credits/currency-rate-api:0.1'
+          name: 'currency-rate-api'
+          env: [
+            {
+              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
+              value: 'http://otel-collector-app'
+            }
+            {
+              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
+              value: 'http/protobuf'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'currency-rate-api'
+            }
+            {
+              name: 'OTEL_LOGS_EXPORTER'
+              value: 'otlp'
+            }
+            {
+              name: 'OTEL_TRACES_EXPORTER'
+              value: 'otlp'
+            }
+            {
+              name: 'OTEL_METRICS_EXPORTER'
+              value: 'otlp'
+            }
+            {
+              name: 'OTEL_RESOURCE_ATTRIBUTES'
+              value: 'application=currency-rate-api,team=team java'
+            }
+            {
+              name: 'JAVA_TOOL_OPTIONS'
+              value: '-javaagent:opentelemetry-javaagent.jar'
             }
           ]
           resources:{

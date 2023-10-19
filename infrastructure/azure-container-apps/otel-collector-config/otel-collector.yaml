@@ -12,7 +12,7 @@ exporters:
   #  verbosity: detailed
   azuremonitor:
     endpoint: "https://dc.services.visualstudio.com/v2/track"
-    instrumentation_key: $APPLICATION_INSIGHTS_INSTRUMENTATION_KEY
+    instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:

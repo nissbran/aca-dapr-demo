@@ -277,8 +277,18 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
   }
 }
 
-
-// {
-//   name: 'masterKey'
-//   value: cosmos.listKeys().primaryMasterKey
-// }
+resource keyvault_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
+  name: 'kv-secretstore'
+  parent: aca_env
+  properties: {
+    componentType: 'secretstores.azure.keyvault'
+    version: 'v1'
+    initTimeout: '5m'
+    metadata: [
+      {
+        name: 'vaultName'
+        value: name
+      }
+    ]
+  }
+}

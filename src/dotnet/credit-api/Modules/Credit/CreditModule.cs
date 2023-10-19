@@ -20,7 +20,7 @@ public static class CreditModule
         group.MapPut("{id}/close-month", CloseMonth);
     }
 
-    private static async Task<IResult> CreateCredit(HttpContext context, CreateCreditRequest request, DaprClient client, CreditMetrics metrics)
+    private static async Task<IResult> CreateCredit(CreateCreditRequest request, DaprClient client, CreditMetrics metrics)
     {
         var creditId = Guid.NewGuid().ToString();
         
@@ -67,27 +67,34 @@ public static class CreditModule
         }
     }
 
-    private static async Task<IResult> GetCredit(HttpContext context, string id, DaprClient client)
+    private static async Task<IResult> GetCredit(string id, DaprClient client)
     {
         Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
+        
         var (credit, _) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
         return TypedResults.Ok(credit);
     }
 
-    private static async Task<IResult> AddTransaction(HttpContext context, string id, AddTransactionRequest request,
-        DaprClient client, CreditMetrics metrics)
+    private static async Task<IResult> AddTransaction(string id, AddTransactionRequest request, DaprClient client, CreditMetrics metrics)
     {
         Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
+        
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
 
         var transactionDate = DateOnly.ParseExact(request.TransactionDate, "yyyy-MM-dd");
 
+        if (request.Currency != null && request.Currency != "SEK")
+        {
+            var conversionRate = await GetCurrencyRate(client, request.Currency);
+            request.Value = (int) Math.Round(request.Value * conversionRate);
+        }
+        
         credit.AddTransaction(request.Value, transactionDate);
 
         if (await SaveCreditState(client, credit, etag))
@@ -99,8 +106,7 @@ public static class CreditModule
                 //await Task.Delay(100);
                 
                 Log.Information("Sent booking message");
-                var booking = new BookingEvent(credit.Id, transaction.Value,
-                    transaction.TransactionDate.ToString("yyyy-MM-dd"), etag);
+                var booking = new BookingEvent(credit.Id, transaction.Value, transaction.TransactionDate.ToString("yyyy-MM-dd"), etag);
                 await client.PublishEventAsync("pubsub", "bookings", booking, new Dictionary<string, string>()
                 {
                     { "partitionKey", credit.Id }, { "SessionId", credit.Id}
@@ -114,21 +120,37 @@ public static class CreditModule
             return TypedResults.Conflict();
         }
     }
+    
+    private static async Task<decimal> GetCurrencyRate(DaprClient client, string fromCurrency, string toCurrency = "SEK")
+    {
+        try
+        {
+            var conversionRateResponse = await client.InvokeMethodAsync<GetCurrencyConversionRateResponse>(HttpMethod.Get,"currency-rate-api", $"v1/currency-rate/from/{fromCurrency}/to/{toCurrency}");
+            return conversionRateResponse.ConversionRate;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e,"Failed to get currency conversion rate, using default value");
+            return 1;
+        }
+    }
 
-    private static async Task<IResult> GetTransactions(HttpContext context, string id, DaprClient client)
+    private static async Task<IResult> GetTransactions(string id, DaprClient client)
     {
         Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
+        
         var (credit, _) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
         return TypedResults.Ok(new GetTransactionsResponse { Count = credit.Transactions.Count });
     }
 
-    private static async Task<IResult> CloseMonth(HttpContext context, string id, DaprClient client)
+    private static async Task<IResult> CloseMonth(string id, DaprClient client)
     {
         Baggage.SetBaggage("creditId", id);
         Activity.Current?.AddTag("creditId", id);
+        
         var (credit, etag) = await GetCreditState(client, id);
         if (credit == null)
             return TypedResults.NotFound();
