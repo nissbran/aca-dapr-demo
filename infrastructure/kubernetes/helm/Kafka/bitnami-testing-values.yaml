@@ -8,19 +8,19 @@ listeners:
     protocol: PLAINTEXT
   external:
     protocol: PLAINTEXT
-extraEnvVars: 
-- name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
-  value: "1"
 controller:
   replicaCount: 1
   persistence:
     enabled: false  
+extraConfig: |-
+  num.partitions=30
+  offsets.topic.replication.factor=1
+  transaction.state.log.replication.factor=1
+  transaction.state.log.min.isr=1
 provisioning:
   enabled: true
-  #numPartitions: 30
-  #replicationFactor: 1
   topics:
-  - name: booking-processor
+  - name: bookings
     partitions: 30
     replicationFactor: 1
 broker:

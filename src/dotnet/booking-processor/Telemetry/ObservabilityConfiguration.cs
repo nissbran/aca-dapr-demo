@@ -11,63 +11,79 @@ namespace BookingProcessor.Telemetry;
 internal static class ObservabilityConfiguration
 {
     internal static bool UsePrometheusEndpoint { get; private set; }
-    
+
     public static WebApplicationBuilder ConfigureTelemetry(this WebApplicationBuilder builder, string serviceNamespace, string application, string team)
     {
         UsePrometheusEndpoint = builder.Configuration.GetValue<bool>("USE_PROMETHEUS_ENDPOINT");
-        
+
         var version = builder.Configuration["APP_VERSION"] ?? "0.1";
         var resourceBuilder = ResourceBuilder.CreateDefault().AddService(
             serviceName: application,
             serviceNamespace: serviceNamespace,
             serviceVersion: version);
-        
-        builder.Host.UseSerilog((context, configuration) =>
-        {
-            var serilogConfiguration = configuration
-                .ReadFrom.Configuration(context.Configuration)
-                .Filter.With<IgnoredEndpointsLogFilter>()
-                .Enrich.FromLogContext();
-
-            if (context.HostingEnvironment.IsDevelopment() || builder.Configuration.GetValue<bool>("USE_CONSOLE_LOG_OUTPUT"))
-                serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
-
-            var otlpEndpoint = context.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
-            if (!string.IsNullOrEmpty(otlpEndpoint))
-            {
-                var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
-                    ? OtlpProtocol.HttpProtobuf
-                    : OtlpProtocol.Grpc;
-                serilogConfiguration.WriteTo.OpenTelemetry(options =>
-                {
-                    options.Protocol = protocol;
-                    options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
-                    options.ResourceAttributes = new Dictionary<string, object>()
-                    {
-                        ["service.name"] = application,
-                        ["service.namespace"] = serviceNamespace,
-                        ["service.team"] = team,
-                        ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
-                    };
-                });
-            }
-            else
-            {
-                serilogConfiguration
-                    .Enrich.WithProperty("namespace", serviceNamespace)
-                    .Enrich.WithProperty("application", application)
-                    .Enrich.WithProperty("team", team);
-            }
-
-            var seqEndpoint = context.Configuration["SEQ_ENDPOINT"];
-            if (!string.IsNullOrEmpty(seqEndpoint))
-            {
-                serilogConfiguration.WriteTo.Seq(seqEndpoint);
-            }
-        });
 
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-        
+
+        if (!string.IsNullOrEmpty(appInsightsConnectionString))
+        {
+            builder.Services.AddLogging(logging =>
+            {
+                logging.AddOpenTelemetry(builderOptions =>
+                {
+                    builderOptions.SetResourceBuilder(resourceBuilder);
+                    builderOptions.IncludeFormattedMessage = true;
+                    builderOptions.IncludeScopes = false;
+                    builderOptions.AddAzureMonitorLogExporter(options => options.ConnectionString = appInsightsConnectionString);
+                });
+            });
+        }
+        else
+        {
+            builder.Host.UseSerilog((context, configuration) =>
+            {
+                var serilogConfiguration = configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .Filter.With<IgnoredEndpointsLogFilter>()
+                    .Enrich.FromLogContext();
+
+                if (context.HostingEnvironment.IsDevelopment() || builder.Configuration.GetValue<bool>("USE_CONSOLE_LOG_OUTPUT"))
+                    serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
+
+                var otlpEndpoint = context.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+                if (!string.IsNullOrEmpty(otlpEndpoint))
+                {
+                    var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
+                        ? OtlpProtocol.HttpProtobuf
+                        : OtlpProtocol.Grpc;
+                    serilogConfiguration.WriteTo.OpenTelemetry(options =>
+                    {
+                        options.Protocol = protocol;
+                        options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
+                        options.ResourceAttributes = new Dictionary<string, object>()
+                        {
+                            ["service.name"] = application,
+                            ["service.namespace"] = serviceNamespace,
+                            ["service.team"] = team,
+                            ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
+                        };
+                    });
+                }
+                else
+                {
+                    serilogConfiguration
+                        .Enrich.WithProperty("namespace", serviceNamespace)
+                        .Enrich.WithProperty("application", application)
+                        .Enrich.WithProperty("team", team);
+                }
+
+                var seqEndpoint = context.Configuration["SEQ_ENDPOINT"];
+                if (!string.IsNullOrEmpty(seqEndpoint))
+                {
+                    serilogConfiguration.WriteTo.Seq(seqEndpoint);
+                }
+            });
+        }
+
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracingBuilder =>
             {
@@ -77,9 +93,9 @@ internal static class ObservabilityConfiguration
                         options.ConnectionString = appInsightsConnectionString;
                         // This is sampled by hashing the traceid with hash seed 5381
                         // This is the same in the java sampler as well
-                        options.SamplingRatio = 0.1f; 
+                        options.SamplingRatio = 0.1f;
                     });
-                
+
                 tracingBuilder
                     .AddOtlpExporter()
                     .SetResourceBuilder(resourceBuilder)
@@ -93,7 +109,7 @@ internal static class ObservabilityConfiguration
                 {
                     metricsBuilder.AddPrometheusExporter();
                 }
-                
+
                 metricsBuilder
                     .AddOtlpExporter()
                     .AddConsumedEventsMetrics()

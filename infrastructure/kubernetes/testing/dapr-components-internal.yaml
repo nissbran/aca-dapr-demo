@@ -49,3 +49,18 @@ spec:
     value: redis:6379
   - name: redisPassword
     value: ""
+---
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  namespace: credits
+  name: creditsconfig
+spec:
+  tracing:
+    samplingRate: "1"
+    stdout: false
+    otel:
+      endpointAddress: "otel-collector-dapr:4317"
+      isSecure: false
+      protocol: "grpc"
+  

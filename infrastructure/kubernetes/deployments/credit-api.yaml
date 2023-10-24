@@ -19,6 +19,9 @@ spec:
         dapr.io/enabled: "true"
         dapr.io/app-id: "credit-api"
         dapr.io/app-port: "80"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9091"
+        dapr.io/config: "creditsconfig"
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
@@ -54,3 +57,25 @@ spec:
   ports:
     - port: 80
       name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: credit-api-ingress
+  namespace: credits
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /credits(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: credit-api
+            port: 
+              name: http
+

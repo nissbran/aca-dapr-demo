@@ -3,39 +3,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: credits
-  name: booking-processor
+  name: currency-rate-api
   labels:
-    app: booking-processor
+    app: currency-rate-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: booking-processor
+      app: currency-rate-api
   template:
     metadata:
       labels:
-        app: booking-processor
+        app: currency-rate-api
       annotations:
         dapr.io/enabled: "true"
-        dapr.io/app-id: "booking-processor"
-        dapr.io/app-port: "80"
+        dapr.io/app-id: "currency-rate-api"
+        dapr.io/app-port: "8080"
         dapr.io/metrics-port: "9091"
         dapr.io/enable-metrics: "true"
         dapr.io/config: "creditsconfig"
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
-        prometheus.io/path: "/metrics"
     spec:
       containers:
-      - name: booking-processor
-        image: <registry>/credits/booking-processor:0.1
+      - name: currency-rate-api
+        image: <registry>/credits/currency-rate-api:0.1
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
-        - name: USE_PROMETHEUS_ENDPOINT
-          value: "true"
-        - name: USE_CONSOLE_LOG_OUTPUT
-          value: "true"
+        - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+          value: <connection-string>
+        - name: JAVA_TOOL_OPTIONS
+          value: "-javaagent:applicationinsights-agent-3.4.17.jar"
         resources:
           requests:
             cpu: 100m
@@ -48,12 +45,12 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: credits
-  name: booking-processor
+  name: currency-rate-api
   labels:
-    app: booking-processor
+    app: currency-rate-api
 spec:
   selector:
-    app: booking-processor
+    app: currency-rate-api
   ports:
-    - port: 80
+    - port: 8080
       name: http

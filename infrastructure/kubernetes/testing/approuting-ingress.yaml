@@ -4,9 +4,8 @@ kind: Ingress
 metadata:
   namespace: credits
   name: credit-api
-  annotations:
-    kubernetes.io/ingress.class: addon-http-application-routing
 spec:
+  ingressClassName: addon-http-application-routing
   rules:
   - host: credit-api.<Cluster dns>
     http:

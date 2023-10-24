@@ -66,6 +66,15 @@ This demo can be published to either Azure Container Apps or Azure Kubernetes Se
 
 [Deploy to Azure Container Apps](infrastructure/azure-container-apps/Readme.md)
 
+## Build and publish the containers to Azure Container Registry
+
+```powershell
+$ENV:ACR="your_acr_name"
+az acr build --registry $ENV:ACR --image credits/credit-api:0.1 src/dotnet/credit-api/.
+az acr build --registry $ENV:ACR --image credits/booking-processor:0.1 src/dotnet/booking-processor/.
+az acr build --registry $ENV:ACR --image credits/interest-rate-api:0.1 src/go/interest-rate-api/.
+az acr build --registry $ENV:ACR --image credits/currency-rate-api:0.1 src/java/currency-rate-api/.
+```
 
 ## Architecture
 

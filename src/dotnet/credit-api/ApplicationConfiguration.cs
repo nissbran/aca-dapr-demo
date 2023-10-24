@@ -27,7 +27,10 @@ internal static class ApplicationConfiguration
         }
 
         app.UseHealthChecks("/healthz");
-        app.UseSerilogRequestLogging();
+        if (ObservabilityConfiguration.IsSerilogConfigured)
+        {
+            app.UseSerilogRequestLogging();
+        }
 
         if (ObservabilityConfiguration.UsePrometheusEndpoint)
         {

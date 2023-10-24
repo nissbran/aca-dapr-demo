@@ -19,4 +19,5 @@ FROM base AS final
 WORKDIR /app
 ENV APP_VERSION=$DOCKER_TAG
 COPY --from=publish /app/publish .
+ENV ASPNETCORE_URLS=http://+:80;http://+:9090
 ENTRYPOINT ["dotnet", "CreditApi.dll"]

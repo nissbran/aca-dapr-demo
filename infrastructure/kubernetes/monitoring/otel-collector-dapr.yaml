@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  namespace: credits
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+          grpc:
+    extensions:
+      health_check:
+      pprof:
+        endpoint: :1888
+      zpages:
+        endpoint: :55679
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      attributes:
+        actions:
+          - key: environment
+            value: "AKS"
+            action: insert
+      probabilistic_sampler:
+        hash_seed: 5381
+        sampling_percentage: 10
+    exporters:
+      debug:
+      azuremonitor:
+        endpoint: "https://dc.services.visualstudio.com/v2/track"
+        instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+    service:
+      extensions: [pprof, zpages, health_check]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [attributes, batch]
+          exporters: [debug, azuremonitor]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-dapr
+  namespace: credits
+  labels:
+    app: otel-collector-dapr
+    component: otel-collector
+spec:
+  ports:
+  - name: grpc
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  selector:
+    component: otel-collector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector-dapr
+  namespace: credits
+  labels:
+    app: otel-collector-dapr
+    component: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector-dapr
+  template:
+    metadata:
+      labels:
+        app: otel-collector-dapr
+        component: otel-collector
+    spec:
+      containers:
+      - name: otel-collector-dapr
+        image: otel/opentelemetry-collector-contrib:0.86.0
+        env:
+        - name: APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+          value: <connection-string>
+        command:
+          - "/otelcol-contrib"
+          - "--config=/conf/otel-collector-config.yaml"
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 400Mi
+        ports:
+          - containerPort: 4317
+        volumeMounts:
+          - name: otel-collector-config-vol
+            mountPath: /conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133
+      volumes:
+        - configMap:
+            name: otel-collector-conf
+            items:
+              - key: otel-collector-config
+                path: otel-collector-config.yaml
+          name: otel-collector-config-vol

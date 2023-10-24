@@ -1,0 +1,36 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+processors:
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
+  attributes:
+    actions:
+      - key: environment
+        value: "AKS"
+        action: insert
+  probabilistic_sampler:
+    hash_seed: 5381
+    sampling_percentage: 10
+exporters:
+  debug:
+  azuremonitor:
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [probabilistic_sampler, attributes, batch]
+      exporters: [azuremonitor]
+  
