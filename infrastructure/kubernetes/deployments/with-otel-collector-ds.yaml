@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: application-settings
+  namespace: credits
+type: Opaque
+data:
+  appinsights_connection_string: ""
+  use_console_log_output: dHJ1ZQo= # true
+  use_prometheus_endpoint: dHJ1ZQo= # true
+  use_console_json_log_output: dHJ1ZQo= # true
+  java_tool_options: ""

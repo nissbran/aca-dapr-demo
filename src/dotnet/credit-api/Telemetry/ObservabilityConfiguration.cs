@@ -4,6 +4,8 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Formatting.Compact;
+using Serilog.Formatting.Json;
 using Serilog.Sinks.OpenTelemetry;
 using Serilog.Sinks.SystemConsole.Themes;
 
@@ -49,7 +51,16 @@ internal static class ObservabilityConfiguration
                     .Enrich.FromLogContext();
 
                 if (context.HostingEnvironment.IsDevelopment() || builder.Configuration.GetValue<bool>("USE_CONSOLE_LOG_OUTPUT"))
-                    serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
+                {
+                    if (builder.Configuration.GetValue<bool>("USE_CONSOLE_JSON_LOG_OUTPUT"))
+                    {
+                        serilogConfiguration.WriteTo.Console(formatter: new RenderedCompactJsonFormatter());
+                    }
+                    else
+                    {
+                        serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
+                    }
+                }
 
                 var otlpEndpoint = context.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
                 if (!string.IsNullOrEmpty(otlpEndpoint))

@@ -1,0 +1,59 @@
+# Test seq for log debugging
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: credits
+  name: seq
+  labels:
+    app: seq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+      - name: seq
+        image: datalust/seq:2023.4
+        ports:
+        - name: ingestion
+          containerPort: 5341
+          protocol: TCP
+        - name: ui
+          containerPort: 80
+          protocol: TCP
+        env:
+        - name: "ACCEPT_EULA"
+          value: "Y"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: credits
+  name: seq
+  labels:
+    app: seq
+spec:
+  selector:
+    app: seq
+  ports:
+    - port: 5341
+      targetPort: ingestion
+      protocol: TCP
+      name: ingestion
+    - port: 80
+      targetPort: ui
+      protocol: TCP
+      name: ui

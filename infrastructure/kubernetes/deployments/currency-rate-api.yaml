@@ -30,9 +30,15 @@ spec:
         - containerPort: 8080
         env:
         - name: APPLICATIONINSIGHTS_CONNECTION_STRING
-          value: <connection-string>
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: appinsights_connection_string
         - name: JAVA_TOOL_OPTIONS
-          value: "-javaagent:applicationinsights-agent-3.4.17.jar"
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: java_tool_options
         resources:
           requests:
             cpu: 100m

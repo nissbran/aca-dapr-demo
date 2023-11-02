@@ -33,9 +33,25 @@ spec:
         - containerPort: 80
         env:
         - name: USE_PROMETHEUS_ENDPOINT
-          value: "true"
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: use_prometheus_endpoint
         - name: USE_CONSOLE_LOG_OUTPUT
-          value: "true"
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: use_console_log_output
+        - name: USE_CONSOLE_JSON_LOG_OUTPUT
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: use_console_json_log_output
+        - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: appinsights_connection_string
         resources:
           requests:
             cpu: 100m
