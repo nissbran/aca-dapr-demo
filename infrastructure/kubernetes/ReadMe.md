@@ -5,6 +5,11 @@ Requirements for kubernetes deploy:
 * Helm v3
 * Kubectl
 
+The monitoring setup for the internal testing setup.
+
+![Monitoring setup](../../docs/aks-setup.png)
+
+
 ## Using and deploying AKS
 This deploy requires owner access on subscription and the rights to create service principals in the Azure Active Directory. 
 
@@ -46,6 +51,8 @@ helm install keda kedacore/keda --namespace keda -f helm/Keda/aks-values.yaml
 ```
 
 Install Dapr. **Omit the aks-values.yaml if you don´t want AKS specific configuration**
+
+**This can also be installed by using the dapr extension for AKS. Use the bicep file ```aks-extension.bicep``` to deploy the extension.**
 
 ```cmd
 helm repo add dapr https://dapr.github.io/helm-charts/
@@ -118,25 +125,31 @@ Deploy the dapr components that uses (Redis + Kafka)
 kubectl apply -f testing/dapr-components-internal.yaml
 ```
 
+## Deploy the OpenTelemetry Collector for Dapr and the application
+
+Uses the namespace ```credits``` created in the previous section.
+
+```cmd
+kubectl apply -f monitoring/otel-collector-dapr.yaml
+```
+
+
 # Deploy the application
 
 Uses the namespace ```credits``` created in the previous section.
 
-## Build the containers to Azure Container Registry
-
-Build and push the images to your Container Registry
-
-For .NET:
-```cmd 
-cd ../..
-cd src/dotnet/credit-api
-az acr build --registry acr<Your name> --image credits/credit-api:0.1 . -f .\Dockerfile
-cd ..
-cd booking-processor
-az acr build --registry acr<Your name> --image credits/booking-processor:0.1 . -f .\Dockerfile
-```
+Deploy the application to Azure Container Registry. Se the [ReadMe.md](../../README.md#build-and-publish-the-containers-to-azure-container-registry) in the root of the repository for more information.
 
 ## Install the application
+
+First choose the setting you want to deploy. This is done by deploying the correct secrets file.
+```cmd
+kubectl apply -f deployments/with-appinsights.yaml
+or
+kubectl apply -f deployments/with-otel-collector.yaml
+or
+kubectl apply -f deployments/with-otel-collector-ds.yaml
+```
 
 Replace the container registry image uri ```<registry>``` in ```deployments/credit-api.yaml``` and ```deployments/booking-processor.yaml``` to point to your registry. 
 

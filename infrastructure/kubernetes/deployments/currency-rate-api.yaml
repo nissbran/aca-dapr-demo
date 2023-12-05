@@ -29,16 +29,30 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: APPLICATIONINSIGHTS_CONNECTION_STRING
-          valueFrom:
-            secretKeyRef:
-              name: application-settings
-              key: appinsights_connection_string
+        # - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: application-settings
+        #       key: appinsights_connection_string
+        # - name: JAVA_TOOL_OPTIONS
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: application-settings
+        #       key: java_tool_options
         - name: JAVA_TOOL_OPTIONS
-          valueFrom:
-            secretKeyRef:
-              name: application-settings
-              key: java_tool_options
+          value: "-javaagent:opentelemetry-javaagent.jar"
+        - name: OTEL_SERVICE_NAME
+          value: "currency-rate-api"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector-dapr:4317"
+        - name: OTEL_LOGS_EXPORTER
+          value: "otlp"
+        - name: OTEL_TRACES_EXPORTER
+          value: "otlp"
+        - name: OTEL_METRICS_EXPORTER
+          value: "otlp"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "application=currency-rate-api,team=team java"
         resources:
           requests:
             cpu: 100m

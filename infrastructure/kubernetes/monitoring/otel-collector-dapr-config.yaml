@@ -24,8 +24,7 @@ processors:
 exporters:
   debug:
   azuremonitor:
-    endpoint: "https://dc.services.visualstudio.com/v2/track"
-    instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+    connection_string: $APPLICATIONINSIGHTS_CONNECTION_STRING
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
@@ -33,4 +32,12 @@ service:
       receivers: [otlp]
       processors: [probabilistic_sampler, attributes, batch]
       exporters: [azuremonitor]
+    metrics:
+      receivers: [otlp]
+      processors: [attributes, batch]
+      exporters: [debug, azuremonitor]
+    logs:
+      receivers: [otlp]
+      processors: [attributes, batch]
+      exporters: [debug, azuremonitor]
   

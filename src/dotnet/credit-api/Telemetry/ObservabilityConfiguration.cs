@@ -108,7 +108,7 @@ internal static class ObservabilityConfiguration
                         options.ConnectionString = appInsightsConnectionString;
                         // This is sampled by hashing the traceid with hash seed 5381
                         // This is the same in the java sampler as well
-                        options.SamplingRatio = 0.1f;
+                        //options.SamplingRatio = 0.1f;
                     });
 
                 tracingBuilder
@@ -123,7 +123,16 @@ internal static class ObservabilityConfiguration
                 if (UsePrometheusEndpoint)
                 {
                     metricsBuilder.AddPrometheusExporter();
-                }
+                } 
+                
+                if (!string.IsNullOrEmpty(appInsightsConnectionString))
+                    metricsBuilder.AddAzureMonitorMetricExporter(options =>
+                    {
+                        options.ConnectionString = appInsightsConnectionString;
+                        // This is sampled by hashing the traceid with hash seed 5381
+                        // This is the same in the java sampler as well
+                        //options.SamplingRatio = 0.1f;
+                    });
 
                 metricsBuilder
                     .AddOtlpExporter()

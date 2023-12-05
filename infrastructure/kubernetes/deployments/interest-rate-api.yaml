@@ -28,6 +28,15 @@ spec:
         image: <registry>/credits/interest-rate-api:0.1
         ports:
         - containerPort: 80
+        env:
+        - name: SERVICE_NAME
+          value: "interest-rate-api"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "otel-collector-dapr:4318"
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: "http/protobuf"
+        - name: INSECURE_MODE
+          value: "true"
         resources:
           requests:
             cpu: 100m

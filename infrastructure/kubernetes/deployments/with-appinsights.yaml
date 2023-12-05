@@ -7,7 +7,7 @@ metadata:
 type: Opaque
 data:
   appinsights_connection_string: "" # Insert your base64 encoded Application Insights connection string here, echo -n "InstrumentationKey=..." | base64
-  use_console_log_output: dHJ1ZQo= # true
+  use_console_log_output: ZmFsc2UK # false
   use_prometheus_endpoint: ZmFsc2UK # false
   use_console_json_log_output: ZmFsc2UK # false
-  java_tool_options: ""
+  java_tool_options: LWphdmFhZ2VudDphcHBsaWNhdGlvbmluc2lnaHRzLWFnZW50LTMuNC4xNy5qYXIK # -javaagent:applicationinsights-agent-3.4.17.jar

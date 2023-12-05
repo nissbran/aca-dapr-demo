@@ -34,12 +34,19 @@ data:
     exporters:
       debug:
       azuremonitor:
-        endpoint: "https://dc.services.visualstudio.com/v2/track"
-        instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+        connection_string: $APPLICATIONINSIGHTS_CONNECTION_STRING
     service:
       extensions: [pprof, zpages, health_check]
       pipelines:
         traces:
+          receivers: [otlp]
+          processors: [attributes, batch]
+          exporters: [debug, azuremonitor]
+        metrics:
+          receivers: [otlp]
+          processors: [attributes, batch]
+          exporters: [debug, azuremonitor]
+        logs:
           receivers: [otlp]
           processors: [attributes, batch]
           exporters: [debug, azuremonitor]
@@ -58,6 +65,10 @@ spec:
     port: 4317
     protocol: TCP
     targetPort: 4317
+  - name: http
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
   selector:
     component: otel-collector
 ---
@@ -82,10 +93,13 @@ spec:
     spec:
       containers:
       - name: otel-collector-dapr
-        image: otel/opentelemetry-collector-contrib:0.86.0
+        image: otel/opentelemetry-collector-contrib:0.89.0
         env:
-        - name: APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
-          value: <connection-string>
+        - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: application-settings
+              key: appinsights_connection_string
         command:
           - "/otelcol-contrib"
           - "--config=/conf/otel-collector-config.yaml"
@@ -98,6 +112,7 @@ spec:
             memory: 400Mi
         ports:
           - containerPort: 4317
+          - containerPort: 4318
         volumeMounts:
           - name: otel-collector-config-vol
             mountPath: /conf
