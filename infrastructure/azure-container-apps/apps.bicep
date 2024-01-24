@@ -45,7 +45,7 @@ resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
       activeRevisionsMode: 'single'
       ingress: {
         external: true
-        targetPort: 80
+        targetPort: 8080
       }
       dapr: {
         enabled: true
@@ -140,7 +140,7 @@ resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
       activeRevisionsMode: 'single'
       dapr: {
         appId: 'booking-processor'
-        appPort: 80
+        appPort: 8080
         enabled: true
       }
       secrets: [
@@ -204,10 +204,6 @@ resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
                 topicName: 'bookings'
                 subscriptionName: 'booking-processor'
                 queueLength: '64'
-                // consumerGroup: 'booking-processor'
-                // unprocessedEventThreshold: '64'
-                // checkpointStrategy: 'blobMetadata'
-                // blobContainer: 'eventhub-subscriptions'
               }
             }
           }

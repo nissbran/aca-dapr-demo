@@ -35,8 +35,7 @@ processors:
 exporters:
   debug:
   azuremonitor:
-    endpoint: "https://dc.services.visualstudio.com/v2/track"
-    instrumentation_key: $APPLICATIONINSIGHTS_INSTRUMENTATION_KEY
+    connection_string: $APPLICATIONINSIGHTS_CONNECTION_STRING
   otlphttp/seq:
     endpoint: http://seq:5341/ingest/otlp
   zipkin:
@@ -51,13 +50,13 @@ service:
     traces:
       receivers: [otlp]
       processors: [attributes, batch] # add probabilistic_sampler to sample traces
-      exporters: [debug, zipkin]
+      exporters: [debug, zipkin] #, azuremonitor]
     metrics:
       receivers: [otlp, prometheus]
       processors: [attributes, batch]
-      exporters: [debug, prometheusremotewrite/local]
+      exporters: [debug, prometheusremotewrite/local] #, azuremonitor]
     logs:
       receivers: [otlp]
       processors: [attributes, batch]
-      exporters: [debug, otlphttp/seq]
+      exporters: [debug, otlphttp/seq] #, azuremonitor]
   

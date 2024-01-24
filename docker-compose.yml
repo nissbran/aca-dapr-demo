@@ -11,20 +11,20 @@ services:
     build:
       context: src\dotnet\credit-api
     ports:
-      - 5010:80
+      - 5010:8080
     environment:
       <<: *common-variables
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
       USE_CONSOLE_LOG_OUTPUT: true
-      USE_CONSOLE_JSON_LOG_OUTPUT: true
+      USE_CONSOLE_JSON_LOG_OUTPUT: false
     depends_on:
       otel-collector:
         condition: service_started
   credit-api-dapr:
-    image: daprio/daprd:1.11.4-mariner
+    image: daprio/daprd:1.12.4-mariner
     command: ["./daprd",
      "-app-id", "credit-api",
-     "-app-port", "80",
+     "-app-port", "8080",
      #"--log-level", "debug",
      "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
@@ -44,7 +44,7 @@ services:
     build:
       context: src\dotnet\booking-processor
     ports:
-      - 5011:80
+      - 5011:8080
     environment:
       <<: *common-variables
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
@@ -52,10 +52,10 @@ services:
       otel-collector:
         condition: service_started
   booking-processor-dapr-1:
-    image: daprio/daprd:1.11.4-mariner
+    image: daprio/daprd:1.12.4-mariner
     command: ["./daprd",
      "-app-id", "booking-processor",
-     "-app-port", "80",
+     "-app-port", "8080",
      #"--log-level", "debug",
      "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
@@ -75,7 +75,7 @@ services:
     build:
       context: src\dotnet\booking-processor
     ports:
-      - 5012:80
+      - 5012:8080
     environment:
       <<: *common-variables
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
@@ -83,10 +83,10 @@ services:
       otel-collector:
         condition: service_started
   booking-processor-dapr-2:
-    image: daprio/daprd:1.11.4-mariner
+    image: daprio/daprd:1.12.4-mariner
     command: ["./daprd",
      "-app-id", "booking-processor",
-     "-app-port", "80",
+     "-app-port", "8080",
      #"--log-level", "debug",
      "-resources-path", "./components",
      "-config", "./components/config.yaml"]   
@@ -114,7 +114,7 @@ services:
       otel-collector:
         condition: service_started
   interest-rate-api-dapr:
-    image: daprio/daprd:1.11.4-mariner
+    image: daprio/daprd:1.12.4-mariner
     command: ["./daprd",
      "-app-id", "interest-rate-api",
      "-app-port", "80",
@@ -137,6 +137,7 @@ services:
       - 5020:8080
     environment:
       OTEL_SERVICE_NAME: "currency-rate-api"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_TRACES_EXPORTER: "otlp"
@@ -149,7 +150,7 @@ services:
       otel-collector:
         condition: service_started
   currency-rate-api-dapr:
-    image: daprio/daprd:1.11.4-mariner
+    image: daprio/daprd:1.12.4-mariner
     command: ["./daprd",
      "-app-id", "currency-rate-api",
      "-app-port", "8080",
@@ -172,22 +173,13 @@ services:
   
   redis-exporter:
     image: oliver006/redis_exporter:v1.54.0-alpine
-
     ports:
       - 9121:9121
     environment:
       REDIS_ADDR: redis:6379
 
-  # zookeeper:
-  #   image: confluentinc/cp-zookeeper:7.0.0
-  #   ports:
-  #     - 2181:2181
-  #   environment:
-  #     ZOOKEEPER_CLIENT_PORT: 2181
-  #     ZOOKEEPER_TICK_TIME: 2000
-
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:7.5.3
     ports:
       - 9092:9092
       - 9101:9101
@@ -243,10 +235,10 @@ services:
       JAVA_OPTS: '-Xms1g -Xmx1g -XX:+ExitOnOutOfMemoryError'
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.89.0
+    image: otel/opentelemetry-collector-contrib:0.92.0
     command: ["--config=conf/config.yaml"]
     environment:
-      - APPLICATIONINSIGHTS_INSTRUMENTATION_KEY=${APPLICATIONINSIGHTS_INSTRUMENTATION_KEY}
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
     volumes:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
     depends_on:

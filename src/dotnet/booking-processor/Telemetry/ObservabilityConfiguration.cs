@@ -24,6 +24,7 @@ internal static class ObservabilityConfiguration
             serviceVersion: version);
 
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
 
         if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
@@ -59,7 +60,6 @@ internal static class ObservabilityConfiguration
                     }
                 }
 
-                var otlpEndpoint = context.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
                 if (!string.IsNullOrEmpty(otlpEndpoint))
                 {
                     var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
@@ -72,7 +72,7 @@ internal static class ObservabilityConfiguration
                         options.ResourceAttributes = new Dictionary<string, object>()
                         {
                             ["service.name"] = application,
-                            ["service.namespace"] = serviceNamespace,
+                            //["service.namespace"] = serviceNamespace,
                             ["service.team"] = team,
                             ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
                         };
@@ -105,9 +105,11 @@ internal static class ObservabilityConfiguration
                         // This is the same in the java sampler as well
                         //options.SamplingRatio = 0.1f;
                     });
+                
+                if (!string.IsNullOrEmpty(otlpEndpoint))
+                    tracingBuilder.AddOtlpExporter();
 
                 tracingBuilder
-                    .AddOtlpExporter()
                     .SetResourceBuilder(resourceBuilder)
                     .AddHttpClientInstrumentation()
                     .AddGrpcClientInstrumentation()
@@ -124,9 +126,10 @@ internal static class ObservabilityConfiguration
                     {
                         options.ConnectionString = appInsightsConnectionString;
                     });
+                if (!string.IsNullOrEmpty(otlpEndpoint))
+                    metricsBuilder.AddOtlpExporter();
 
                 metricsBuilder
-                    .AddOtlpExporter()
                     .AddConsumedEventsMetrics()
                     .SetResourceBuilder(resourceBuilder)
                     .AddHttpClientInstrumentation()

@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -47,10 +49,14 @@ func startServerWithCleanShutdown(handler http.Handler) {
 	if !ok {
 		port = "5041"
 	}
+	hostIp, ok := os.LookupEnv("HOST_IP")
+	if !ok {
+		hostIp = "localhost"
+	}
 
 	log.Println("Starting server on port", port)
 
-	address := fmt.Sprintf("localhost:%v", port)
+	address := fmt.Sprintf("%v:%v", hostIp, port)
 
 	srv := &http.Server{
 		Addr:    address,
@@ -97,6 +103,11 @@ func initTracer() func(context.Context) error {
 		return nil
 	}
 
+	if (strings.HasPrefix(collectorURL, "http://") || strings.HasPrefix(collectorURL, "https://")) && protocol == "grpc/protobuf" {
+		log.Println("Collector URL is http/https, but protocol is grpc/protobuf. Switching to http/protobuf")
+		protocol = "http/protobuf"
+	}
+
 	var client otlptrace.Client
 	if protocol == "http/protobuf" {
 		if len(insecure) > 0 {
@@ -140,4 +151,14 @@ func initTracer() func(context.Context) error {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return exporter.Shutdown
+}
+
+func serveMetrics() {
+	log.Printf("serving metrics at localhost:9090/metrics")
+	http.Handle("/metrics", promhttp.Handler())
+	err := http.ListenAndServe(":9090", nil)
+	if err != nil {
+		fmt.Printf("error serving http: %v", err)
+		return
+	}
 }

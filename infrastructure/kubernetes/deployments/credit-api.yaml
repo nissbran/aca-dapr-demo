@@ -18,7 +18,7 @@ spec:
       annotations:
         dapr.io/enabled: "true"
         dapr.io/app-id: "credit-api"
-        dapr.io/app-port: "80"
+        dapr.io/app-port: "8080"
         dapr.io/enable-metrics: "true"
         dapr.io/metrics-port: "9091"
         dapr.io/config: "creditsconfig"
@@ -30,7 +30,7 @@ spec:
       - name: credit-api
         image: <registry>/credits/credit-api:0.1
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: USE_PROMETHEUS_ENDPOINT
           valueFrom:
@@ -71,7 +71,7 @@ spec:
   selector:
     app: credit-api
   ports:
-    - port: 80
+    - port: 8080
       name: http
 ---
 apiVersion: networking.k8s.io/v1

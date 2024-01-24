@@ -8,6 +8,7 @@
 *.GhostDoc.xml
 .vscode
 .vs
+.dapr
 
 # Outputs
 publish

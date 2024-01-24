@@ -18,7 +18,7 @@ spec:
       annotations:
         dapr.io/enabled: "true"
         dapr.io/app-id: "booking-processor"
-        dapr.io/app-port: "80"
+        dapr.io/app-port: "8080"
         dapr.io/metrics-port: "9091"
         dapr.io/enable-metrics: "true"
         dapr.io/config: "creditsconfig"
@@ -30,7 +30,7 @@ spec:
       - name: booking-processor
         image: <registry>/credits/booking-processor:0.1
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: USE_PROMETHEUS_ENDPOINT
           valueFrom:
@@ -71,5 +71,5 @@ spec:
   selector:
     app: booking-processor
   ports:
-    - port: 80
+    - port: 8080
       name: http

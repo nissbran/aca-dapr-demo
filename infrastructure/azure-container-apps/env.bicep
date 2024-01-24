@@ -177,7 +177,7 @@ resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinit
 }
 
 // Azure Container Apps ---------------------------------------
-resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' = {
+resource aca_env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
   name: 'acaenv${name}'
   location: location
   properties: {
@@ -188,8 +188,11 @@ resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' = {
         sharedKey: loganalytics_workspace.listKeys().primarySharedKey
       }
     }
-    daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
-    daprAIConnectionString: appinsights.properties.ConnectionString
+    // daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
+    // daprAIConnectionString: appinsights.properties.ConnectionString
+    appInsightsConfiguration:{
+      connectionString: appinsights.properties.ConnectionString
+    }
     infrastructureResourceGroup: 'rg-aca-${name}-infra'
     workloadProfiles: [
       {

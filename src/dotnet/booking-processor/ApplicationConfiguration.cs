@@ -9,6 +9,15 @@ internal static class ApplicationConfiguration
         builder.Services.AddControllers().AddDapr();
         builder.Services.AddHealthChecks();
         builder.Services.AddSingleton<EventConsumedMetrics>();
+        builder.Services.AddServiceDiscovery();
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            // Turn on resilience by default
+            http.AddStandardResilienceHandler();
+
+            // Turn on service discovery by default
+            http.UseServiceDiscovery();
+        });
 
         return builder.Build();
     }

@@ -123,7 +123,7 @@ resource sbSharedKey 'Microsoft.ServiceBus/namespaces/authorizationRules@2021-11
 // }
 
 
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' = {
   name: 'cosmos${name}'
   location: location
   kind: 'GlobalDocumentDB'
@@ -147,7 +147,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-11-15' = {
   }
 }
 
-resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-11-15' = {
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-11-15' = {
   parent: cosmos
   name: 'credits'
   properties: {
@@ -157,7 +157,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-11-15
   }
 }
 
-resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
+resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
   parent: database
   name: 'creditstore'
   properties: {
@@ -173,7 +173,7 @@ resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contain
   }
 }
 
-resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-11-15' = {
+resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
   parent: database
   name: 'bookingstore'
   properties: {
@@ -189,7 +189,7 @@ resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contai
   }
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2022-11-01-preview' = {
+resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: 'acaenv${name}'
   location: location
   properties: {

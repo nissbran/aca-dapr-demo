@@ -1,0 +1,24 @@
+version: 1
+common:
+  resourcesPath: ./dapr/components/
+apps:
+  - appID: credit-api
+    appDirPath: ./src/dotnet/credit-api/
+    command: ["dotnet", "run"]
+    appPort: 8081
+    appLogDestination: console
+  - appID: booking-processor 
+    appDirPath: ./src/dotnet/booking-processor/
+    command: ["dotnet", "run"]
+    appPort: 8082
+    appLogDestination: console
+  - appID: interest-rate-api 
+    appDirPath: ./src/go/interest-rate-api/
+    command: ["go", "run", "interest-rate-api"]
+    appPort: 5041
+    appLogDestination: console
+  - appID: currency-rate-api
+    appDirPath: ./src/java/currency-rate-api/
+    command: [".\\gradlew", "bootrun"]
+    appPort: 8080
+    appLogDestination: console

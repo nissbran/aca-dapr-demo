@@ -11,7 +11,16 @@ internal static class ApplicationConfiguration
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddDaprClient();
-        builder.Services.AddHealthChecks();
+        builder.Services.AddHealthChecks(); 
+        builder.Services.AddServiceDiscovery();
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            // Turn on resilience by default
+            http.AddStandardResilienceHandler();
+
+            // Turn on service discovery by default
+            http.UseServiceDiscovery();
+        });
 
         builder.Services.AddCreditModule();
         

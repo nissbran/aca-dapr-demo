@@ -100,15 +100,15 @@ resource otel_collector_metrics_app 'Microsoft.App/containerApps@2023-05-01' = {
       
       containers: [
         {
-          image: 'otel/opentelemetry-collector-contrib:0.86.0'
+          image: 'otel/opentelemetry-collector-contrib:0.92.0'
           name: 'otel-collector'
           args: [
             '--config=/etc/otelcol/otel-collector-app.yaml'
           ]
           env: [
             {
-              name: 'APPLICATIONINSIGHTS_INSTRUMENTATION_KEY'
-              value: appinsights.properties.InstrumentationKey
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: appinsights.properties.ConnectionString
             }
           ]
           volumeMounts: [

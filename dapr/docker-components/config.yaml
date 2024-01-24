@@ -11,5 +11,3 @@ spec:
       endpointAddress: "otel-collector:4317"
       isSecure: false
       protocol: "grpc"
-    # zipkin:
-    #   endpointAddress: "http://otel-collector:9411/api/v2/spans"

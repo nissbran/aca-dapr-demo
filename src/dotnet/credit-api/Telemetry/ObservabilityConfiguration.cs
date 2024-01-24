@@ -75,7 +75,7 @@ internal static class ObservabilityConfiguration
                         options.ResourceAttributes = new Dictionary<string, object>()
                         {
                             ["service.name"] = application,
-                            ["service.namespace"] = serviceNamespace,
+                            //["service.namespace"] = serviceNamespace,
                             ["service.team"] = team,
                             ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
                         };

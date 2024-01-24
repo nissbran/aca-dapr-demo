@@ -11,8 +11,8 @@ FROM eclipse-temurin:17-jre
 WORKDIR /home/application/java
 COPY --from=compile /home/source/java/build/libs/currency-rate-api.jar .
 COPY --from=compile /home/source/java/applicationinsights.json .
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.30.0/opentelemetry-javaagent.jar ./
-ADD https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.4.17/applicationinsights-agent-3.4.17.jar ./
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.0.0/opentelemetry-javaagent.jar ./
+ADD https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.4.19/applicationinsights-agent-3.4.19.jar ./
 ENV OTEL_SERVICE_VERSION=$DOCKER_TAG
 EXPOSE 8080
 ENTRYPOINT [ "java", "-jar", "/home/application/java/currency-rate-api.jar"]
