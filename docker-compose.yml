@@ -17,6 +17,7 @@ services:
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
       USE_CONSOLE_LOG_OUTPUT: true
       USE_CONSOLE_JSON_LOG_OUTPUT: false
+      OTEL_SERVICE_NAME: "credit-api"
     depends_on:
       otel-collector:
         condition: service_started
@@ -48,6 +49,7 @@ services:
     environment:
       <<: *common-variables
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      OTEL_SERVICE_NAME: "booking-processor"
     depends_on:
       otel-collector:
         condition: service_started
@@ -79,6 +81,7 @@ services:
     environment:
       <<: *common-variables
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      OTEL_SERVICE_NAME: "booking-processor"
     depends_on:
       otel-collector:
         condition: service_started
@@ -143,7 +146,6 @@ services:
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       JAVA_TOOL_OPTIONS: "-javaagent:opentelemetry-javaagent.jar"
-      OTEL_RESOURCE_ATTRIBUTES: "application=currency-rate-api,team=team java"
       # APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
       # JAVA_TOOL_OPTIONS: "-javaagent:applicationinsights-agent-3.4.17.jar"
     depends_on:

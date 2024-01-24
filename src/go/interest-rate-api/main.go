@@ -103,11 +103,15 @@ func initTracer() func(context.Context) error {
 		return nil
 	}
 
-	if (strings.HasPrefix(collectorURL, "http://") || strings.HasPrefix(collectorURL, "https://")) && protocol == "grpc/protobuf" {
-		log.Println("Collector URL is http/https, but protocol is grpc/protobuf. Switching to http/protobuf")
-		protocol = "http/protobuf"
+	if strings.HasPrefix(collectorURL, "http://") {
+		// remove http:// prefix
+		collectorURL = collectorURL[7:]
 	}
-
+	if strings.HasPrefix(collectorURL, "https://") {
+		// remove https:// prefix
+		collectorURL = collectorURL[8:]
+	}
+	
 	var client otlptrace.Client
 	if protocol == "http/protobuf" {
 		if len(insecure) > 0 {

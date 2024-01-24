@@ -17,11 +17,7 @@ internal static class ObservabilityConfiguration
     {
         UsePrometheusEndpoint = builder.Configuration.GetValue<bool>("USE_PROMETHEUS_ENDPOINT");
 
-        var version = builder.Configuration["APP_VERSION"] ?? "0.1";
-        var resourceBuilder = ResourceBuilder.CreateDefault().AddService(
-            serviceName: application,
-            serviceNamespace: serviceNamespace,
-            serviceVersion: version);
+        var resourceBuilder = ResourceBuilder.CreateDefault();
 
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
@@ -69,13 +65,7 @@ internal static class ObservabilityConfiguration
                     {
                         options.Protocol = protocol;
                         options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
-                        options.ResourceAttributes = new Dictionary<string, object>()
-                        {
-                            ["service.name"] = application,
-                            //["service.namespace"] = serviceNamespace,
-                            ["service.team"] = team,
-                            ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
-                        };
+                        options.ResourceAttributes = resourceBuilder.Build().Attributes.ToDictionary();
                     });
                 }
                 else

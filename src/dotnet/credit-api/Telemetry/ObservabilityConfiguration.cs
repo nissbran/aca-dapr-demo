@@ -5,7 +5,6 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Formatting.Compact;
-using Serilog.Formatting.Json;
 using Serilog.Sinks.OpenTelemetry;
 using Serilog.Sinks.SystemConsole.Themes;
 
@@ -20,13 +19,10 @@ internal static class ObservabilityConfiguration
     {
         UsePrometheusEndpoint = builder.Configuration.GetValue<bool>("USE_PROMETHEUS_ENDPOINT");
 
-        var version = builder.Configuration["APP_VERSION"] ?? "0.1";
-        var resourceBuilder = ResourceBuilder.CreateDefault().AddService(
-            serviceName: application,
-            serviceNamespace: serviceNamespace,
-            serviceVersion: version);
+        var resourceBuilder = ResourceBuilder.CreateDefault();
 
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
 
         if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
@@ -62,23 +58,17 @@ internal static class ObservabilityConfiguration
                     }
                 }
 
-                var otlpEndpoint = context.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
                 if (!string.IsNullOrEmpty(otlpEndpoint))
                 {
                     var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
                         ? OtlpProtocol.HttpProtobuf
                         : OtlpProtocol.Grpc;
+
                     serilogConfiguration.WriteTo.OpenTelemetry(options =>
                     {
                         options.Protocol = protocol;
                         options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
-                        options.ResourceAttributes = new Dictionary<string, object>()
-                        {
-                            ["service.name"] = application,
-                            //["service.namespace"] = serviceNamespace,
-                            ["service.team"] = team,
-                            ["service.version"] = builder.Configuration["APP_VERSION"] ?? "0.1"
-                        };
+                        options.ResourceAttributes = resourceBuilder.Build().Attributes.ToDictionary();
                     });
                 }
                 else
@@ -111,8 +101,10 @@ internal static class ObservabilityConfiguration
                         //options.SamplingRatio = 0.1f;
                     });
 
+                if (!string.IsNullOrEmpty(otlpEndpoint))
+                    tracingBuilder.AddOtlpExporter();
+                
                 tracingBuilder
-                    .AddOtlpExporter()
                     .SetResourceBuilder(resourceBuilder)
                     .AddHttpClientInstrumentation()
                     .AddGrpcClientInstrumentation()
@@ -123,8 +115,8 @@ internal static class ObservabilityConfiguration
                 if (UsePrometheusEndpoint)
                 {
                     metricsBuilder.AddPrometheusExporter();
-                } 
-                
+                }
+
                 if (!string.IsNullOrEmpty(appInsightsConnectionString))
                     metricsBuilder.AddAzureMonitorMetricExporter(options =>
                     {
@@ -133,9 +125,11 @@ internal static class ObservabilityConfiguration
                         // This is the same in the java sampler as well
                         //options.SamplingRatio = 0.1f;
                     });
+                
+                if (!string.IsNullOrEmpty(otlpEndpoint))
+                    metricsBuilder.AddOtlpExporter();
 
                 metricsBuilder
-                    .AddOtlpExporter()
                     .SetResourceBuilder(resourceBuilder)
                     .AddCreditMetrics()
                     .AddHttpClientInstrumentation()
