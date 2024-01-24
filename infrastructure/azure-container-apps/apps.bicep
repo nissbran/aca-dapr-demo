@@ -80,6 +80,10 @@ resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'http/protobuf'
             }
             {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'credit-api'
+            }
+            {
               name: 'USE_CONSOLE_LOG_OUTPUT'
               value: 'true'
             }
@@ -174,6 +178,10 @@ resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
               value: 'http/protobuf'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'booking-processor'
             }
             {
               name: 'USE_CONSOLE_LOG_OUTPUT'
@@ -285,6 +293,10 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
               value: 'http/protobuf'
+            }
+            {
+              name: 'OTEL_SERVICE_NAME'
+              value: 'interest-rate-api'
             }
             {
               name: 'INSECURE_MODE'

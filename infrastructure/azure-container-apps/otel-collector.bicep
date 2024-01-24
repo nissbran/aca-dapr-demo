@@ -1,7 +1,8 @@
 param name string
 param location string = resourceGroup().location
 param utcValue string = utcNow()
-param azureMonitorIngestionUrl string = 'https://local-prom-ws-qd7q.westeurope-1.metrics.ingest.monitor.azure.com/dataCollectionRules/dcr-c91ba11b031441368a2d6e4337ac6326/streams/Microsoft-PrometheusMetrics/api/v1/write?api-version=2023-04-24'
+@secure()
+param azureMonitorIngestionUrl string
 
 // Existing resources ----------------------------------------------------------
 resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' existing = {

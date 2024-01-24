@@ -111,7 +111,7 @@ func initTracer() func(context.Context) error {
 		// remove https:// prefix
 		collectorURL = collectorURL[8:]
 	}
-	
+
 	var client otlptrace.Client
 	if protocol == "http/protobuf" {
 		if len(insecure) > 0 {
@@ -134,7 +134,6 @@ func initTracer() func(context.Context) error {
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(
-			attribute.String("service.namespace", "credits"),
 			attribute.String("service.name", serviceName),
 			attribute.String("service.version", version),
 			attribute.String("service.team", "go team"),

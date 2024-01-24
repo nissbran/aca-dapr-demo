@@ -188,11 +188,10 @@ resource aca_env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
         sharedKey: loganalytics_workspace.listKeys().primarySharedKey
       }
     }
-    // daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
-    // daprAIConnectionString: appinsights.properties.ConnectionString
-    appInsightsConfiguration:{
+    appInsightsConfiguration: {
       connectionString: appinsights.properties.ConnectionString
     }
+    daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
     infrastructureResourceGroup: 'rg-aca-${name}-infra'
     workloadProfiles: [
       {
