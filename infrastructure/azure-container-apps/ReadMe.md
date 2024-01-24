@@ -20,23 +20,9 @@ Deploy the Environment. **Choose a unique name for the name parameter (only text
 ```cmd
 az deployment group create -g rg-aca-dapr-demo --template-file env.bicep --parameters name=<Your name>
 ```
+Next step is to build the images: [Build and push the images to your Container Registry](../../README.md#build-and-publish-the-containers-to-azure-container-registry)
 
-Build and push the images to your Container Registry
-
-For .NET:
-```cmd
-cd ../..
-cd src/dotnet/credit-api
-az acr build --registry acr<Your name> --image credits/credit-api:0.1 . -f .\Dockerfile
-cd ..
-cd booking-processor
-az acr build --registry acr<Your name> --image credits/booking-processor:0.1 . -f .\Dockerfile
-cd ../..
-cd go/interest-rate-api
-az acr build --registry acr<Your name> --image credits/interest-rate-api:0.1 . -f .\Dockerfile
-```
-
-Then deploy the applications.
+Then deploy the container applications:
 
 ```cmd
 az deployment group create -g rg-aca-dapr-demo --template-file apps.bicep --parameters name=<Your name>

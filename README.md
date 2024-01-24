@@ -88,7 +88,7 @@ JAVA_TOOL_OPTIONS: "-javaagent:applicationinsights-agent-3.4.17.jar"
 
 This demo can be published to either Azure Container Apps or Azure Kubernetes Service. The following sections describe how to publish to each of these services.
 
-[Deploy to Azure Container Apps](infrastructure/azure-container-apps/Readme.md)
+[Deploy to Azure Container Apps](infrastructure/azure-container-apps/ReadMe.md)
 
 ## Build and publish the containers to Azure Container Registry
 
