@@ -25,7 +25,7 @@ builder.AddContainer("interest-rate-api", "interest-rate-api", "1.0")
        .WithEnvironment("SERVICE_NAME", "interest-rate-api")
        .WithEnvironment("GIN_MODE", "debug")
        .WithEnvironment("INSECURE_MODE", "true")
-       .WithServiceBinding(80, 5041, "http");
+       .WithEndpoint(80, 5041, "http");
 
 builder.AddContainer("currency-rate-api", "currency-rate-api", "1.0")
        .WithDaprSidecar("currency-rate-api")
@@ -36,6 +36,6 @@ builder.AddContainer("currency-rate-api", "currency-rate-api", "1.0")
        .WithEnvironment("OTEL_TRACES_EXPORTER", "otlp")
        .WithEnvironment("OTEL_METRICS_EXPORTER", "otlp")
        .WithEnvironment("JAVA_TOOL_OPTIONS", "-javaagent:opentelemetry-javaagent.jar")
-       .WithServiceBinding(8080, 5042, "http");;
+       .WithEndpoint(8080, 5042, "http");
 
 builder.Build().Run();
