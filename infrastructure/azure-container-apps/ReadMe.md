@@ -27,3 +27,9 @@ Then deploy the container applications:
 ```cmd
 az deployment group create -g rg-aca-dapr-demo --template-file apps.bicep --parameters name=<Your name>
 ```
+
+To monitor the application deploy the opentelemetry collector:
+
+```cmd
+az deployment group create -g rg-aca-dapr-demo --template-file otel-collector.bicep --parameters name=<Your name>
+```

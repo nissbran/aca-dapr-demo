@@ -7,6 +7,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 const string appName = "booking-processor";
 
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Verbose()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", theme: AnsiConsoleTheme.Sixteen)
     .CreateBootstrapLogger();

@@ -7,7 +7,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   sku: {
     name: 'Basic'
   }
-  properties:{
+  properties: {
     adminUserEnabled: true
   }
 }
@@ -84,7 +84,7 @@ resource sbSharedKey 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11
   name: 'credits'
   parent: sb_ns
   properties: {
-    rights: [ 'Send', 'Listen', 'Manage' ]
+    rights: ['Send', 'Listen', 'Manage']
   }
 }
 
@@ -177,7 +177,7 @@ resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinit
 }
 
 // Azure Container Apps ---------------------------------------
-resource aca_env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
+resource aca_env 'Microsoft.App/managedEnvironments@2023-11-02-preview' = {
   name: 'acaenv${name}'
   location: location
   properties: {
@@ -191,6 +191,30 @@ resource aca_env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
     appInsightsConfiguration: {
       connectionString: appinsights.properties.ConnectionString
     }
+    openTelemetryConfiguration: {
+      logsConfiguration: {
+        destinations: ['appInsights']
+      }
+      metricsConfiguration: {
+        destinations: [] // appInsights not supported yet
+      }
+      tracesConfiguration: {
+        destinations: ['appInsights']
+      }
+      destinationsConfiguration: {
+        otlpConfigurations: []
+      }
+      // destinationsConfiguration: {
+      //   otlpConfigurations: [
+      //     {
+      //       name: 'dashboard'
+      //       endpoint: 'http://dashboard:4317'
+      //       insecure: true
+      //     }
+      //   ]
+      // }
+    }
+    //daprAIConnectionString: appinsights.properties.ConnectionString
     daprAIInstrumentationKey: appinsights.properties.InstrumentationKey
     infrastructureResourceGroup: 'rg-aca-${name}-infra'
     workloadProfiles: [
@@ -220,7 +244,8 @@ resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2023
       }
     ]
     scopes: [
-      'credit-api', 'booking-processor'
+      'credit-api'
+      'booking-processor'
     ]
   }
 }
@@ -247,7 +272,8 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
       }
     ]
     scopes: [
-      'credit-api', 'booking-processor'
+      'credit-api'
+      'booking-processor'
     ]
   }
 }
@@ -292,5 +318,52 @@ resource keyvault_component 'Microsoft.App/managedEnvironments/daprComponents@20
         value: name
       }
     ]
+  }
+}
+
+// Aspire Dashboard --------------------------------------------
+// For direct access to logs, metrics, and traces.
+resource dashboard 'Microsoft.App/containerApps@2023-11-02-preview' = {
+  name: 'dashboard' 
+  location: location
+  properties: {
+    managedEnvironmentId: aca_env.id
+    configuration: {
+      activeRevisionsMode: 'single'
+      ingress: {
+        external: true
+        targetPort: 18888
+        additionalPortMappings: [
+          {
+            external: false
+            targetPort: 18889
+            exposedPort: 4317
+          }
+        ]
+      }
+    }
+    template: {
+      containers: [
+        {
+          image: 'mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0.0-preview.5'
+          name: 'dashboard'
+          resources:{
+            cpu: json('.25')
+            memory: '.5Gi'
+          }
+          env: [
+            {
+              name: 'DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS'
+              value: 'true'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+        rules: []
+      }
+    }
   }
 }

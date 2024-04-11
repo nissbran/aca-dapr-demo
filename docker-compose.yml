@@ -229,23 +229,22 @@ services:
       KAFKA_BROKERCONNECT: kafka:29092
       JVM_OPTS: "-Xms32M -Xmx64M"
 
-  zipkin:
-    image: openzipkin/zipkin:2.24
+  dashboard:
+    image: mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0.0-preview.5
     ports:
-      - 9412:9411
+      - 18888:18888
+      #- 4317:18889
     environment:
-      JAVA_OPTS: '-Xms1g -Xmx1g -XX:+ExitOnOutOfMemoryError'
-
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+    
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.92.0
+    image: otel/opentelemetry-collector-contrib:0.97.0
     command: ["--config=conf/config.yaml"]
     environment:
       - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
     volumes:
       - ./docker/otel-collector-config.yaml:/conf/config.yaml
     depends_on:
-      - zipkin
-      - seq
       - prometheus
 
   # otel-prom-remote-write:
@@ -261,12 +260,12 @@ services:
   #   volumes:
   #     - ./certs/pfxcert.pfx:/certs/pfxcert.pfx
 
-  seq:
-    image: datalust/seq:2023.4
-    ports:
-      - 5341:80
-    environment:
-      - ACCEPT_EULA=Y
+  # seq:
+  #   image: datalust/seq:2023.4
+  #   ports:
+  #     - 5341:80
+  #   environment:
+  #     - ACCEPT_EULA=Y
 
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -279,10 +278,10 @@ services:
       - '--web.enable-remote-write-receiver'
       - '--storage.tsdb.retention.time=1d'
   
-  grafana:
-    image: grafana/grafana:10.1.4
-    ports:
-      - 3000:3000
+  # grafana:
+  #   image: grafana/grafana:10.1.4
+  #   ports:
+  #     - 3000:3000
     
 
 

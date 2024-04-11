@@ -36,27 +36,31 @@ exporters:
   debug:
   azuremonitor:
     connection_string: $APPLICATIONINSIGHTS_CONNECTION_STRING
-  otlphttp/seq:
-    endpoint: http://seq:5341/ingest/otlp
-  zipkin:
-    endpoint: http://zipkin:9411/api/v2/spans
+  # otlphttp/seq:
+  #   endpoint: http://seq:5341/ingest/otlp
+  # zipkin:
+  #   endpoint: http://zipkin:9411/api/v2/spans
   # prometheusremotewrite:
   #   endpoint: "http://otel-prom-remote-write:8081/api/v1/write"
   prometheusremotewrite/local:
     endpoint: http://prometheus:9090/api/v1/write
+  otlp/dashboard:
+    endpoint: http://dashboard:18889
+    tls:
+      insecure: true
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes, batch] # add probabilistic_sampler to sample traces
-      exporters: [debug, zipkin] #, azuremonitor]
+      processors: [attributes] # add probabilistic_sampler to sample traces
+      exporters: [debug, otlp/dashboard] #, azuremonitor]
     metrics:
       receivers: [otlp, prometheus]
-      processors: [attributes, batch]
-      exporters: [debug, prometheusremotewrite/local] #, azuremonitor]
+      processors: [attributes]
+      exporters: [debug, otlp/dashboard, prometheusremotewrite/local] #, azuremonitor]
     logs:
       receivers: [otlp]
-      processors: [attributes, batch]
-      exporters: [debug, otlphttp/seq] #, azuremonitor]
+      processors: [attributes]
+      exporters: [debug, otlp/dashboard] #, azuremonitor]
   

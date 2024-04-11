@@ -1,4 +1,3 @@
-
 param name string
 param location string = resourceGroup().location
 
@@ -23,14 +22,18 @@ resource sbSharedKey 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11
   parent: sb_ns
 }
 
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' existing = {
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' existing = {
   name: 'cosmos${name}'
 }
 
-resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2023-04-15' existing = {
+resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2023-11-15' existing = {
   name: guid('sql-rw-role-definition', cosmos.id)
   parent: cosmos
 }
+
+// resource appinsights 'Microsoft.Insights/components@2020-02-02' existing = {
+//   name: 'appinsights${name}'
+// }
 
 // Credit api -----------------------------------------------------------------
 resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
@@ -72,20 +75,16 @@ resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'credit-api'
           env: [
             {
-              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
-              value: 'http://otel-collector-app'
-            }
-            {
-              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
-              value: 'http/protobuf'
-            }
-            {
               name: 'OTEL_SERVICE_NAME'
               value: 'credit-api'
             }
             {
               name: 'USE_CONSOLE_LOG_OUTPUT'
               value: 'true'
+            }
+            {
+              name: 'USE_SERILOG_FOR_OTEL'
+              value: 'false'
             }
           ]
           resources:{
@@ -172,20 +171,16 @@ resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'booking-processor'
           env: [
             {
-              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
-              value: 'http://otel-collector-app'
-            }
-            {
-              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
-              value: 'http/protobuf'
-            }
-            {
               name: 'OTEL_SERVICE_NAME'
               value: 'booking-processor'
             }
             {
               name: 'USE_CONSOLE_LOG_OUTPUT'
               value: 'true'
+            }
+            {
+              name: 'USE_SERILOG_FOR_OTEL'
+              value: 'false'
             }
           ]
           resources:{
@@ -287,14 +282,6 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'interest-rate-api'
           env: [
             {
-              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
-              value: 'otel-collector-app'
-            }
-            {
-              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
-              value: 'http/protobuf'
-            }
-            {
               name: 'OTEL_SERVICE_NAME'
               value: 'interest-rate-api'
             }
@@ -354,14 +341,6 @@ resource currency_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'currency-rate-api'
           env: [
             {
-              name: 'OTEL_EXPORTER_OTLP_ENDPOINT'
-              value: 'http://otel-collector-app'
-            }
-            {
-              name: 'OTEL_EXPORTER_OTLP_PROTOCOL'
-              value: 'http/protobuf'
-            }
-            {
               name: 'OTEL_SERVICE_NAME'
               value: 'currency-rate-api'
             }
@@ -385,6 +364,7 @@ resource currency_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'JAVA_TOOL_OPTIONS'
               value: '-javaagent:opentelemetry-javaagent.jar'
             }
+            
           ]
           resources:{
             cpu: json('.25')

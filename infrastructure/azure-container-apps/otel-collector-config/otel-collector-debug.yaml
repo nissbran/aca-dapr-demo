@@ -1,0 +1,38 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+processors:
+  attributes:
+    actions:
+      - key: environment
+        value: "ACA-DEV"
+        action: insert
+      - key: cluster
+        value: $CONTAINER_APP_ENV_DNS_SUFFIX
+        action: insert
+exporters:
+  debug:
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [attributes]
+      exporters: [debug]
+  

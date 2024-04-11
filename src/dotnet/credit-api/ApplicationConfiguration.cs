@@ -19,7 +19,7 @@ internal static class ApplicationConfiguration
             http.AddStandardResilienceHandler();
 
             // Turn on service discovery by default
-            http.UseServiceDiscovery();
+            http.AddServiceDiscovery();
         });
 
         builder.Services.AddCreditModule();

@@ -1,5 +1,7 @@
 ﻿using Azure.Monitor.OpenTelemetry.Exporter;
 using CreditApi.Modules.Credit;
+using Microsoft.AspNetCore.Http;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -23,6 +25,7 @@ internal static class ObservabilityConfiguration
 
         var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+        var useSerilogForOtel = builder.Configuration.GetValue("USE_SERILOG_FOR_OTEL", true);
 
         if (!string.IsNullOrEmpty(appInsightsConnectionString))
         {
@@ -39,60 +42,92 @@ internal static class ObservabilityConfiguration
         }
         else
         {
-            builder.Host.UseSerilog((context, configuration) =>
+            if (useSerilogForOtel)
             {
-                var serilogConfiguration = configuration
-                    .ReadFrom.Configuration(context.Configuration)
-                    .Filter.With<IgnoredEndpointsLogFilter>()
-                    .Enrich.FromLogContext();
+                Log.Verbose("Using Serilog for logging");
 
-                if (context.HostingEnvironment.IsDevelopment() || builder.Configuration.GetValue<bool>("USE_CONSOLE_LOG_OUTPUT"))
+                builder.Host.UseSerilog((context, configuration) =>
                 {
-                    if (builder.Configuration.GetValue<bool>("USE_CONSOLE_JSON_LOG_OUTPUT"))
+                    var serilogConfiguration = configuration
+                        .ReadFrom.Configuration(context.Configuration)
+                        .Filter.With<IgnoredEndpointsLogFilter>()
+                        .Enrich.FromLogContext();
+
+                    if (context.HostingEnvironment.IsDevelopment() || builder.Configuration.GetValue<bool>("USE_CONSOLE_LOG_OUTPUT"))
                     {
-                        serilogConfiguration.WriteTo.Console(formatter: new RenderedCompactJsonFormatter());
+                        if (builder.Configuration.GetValue<bool>("USE_CONSOLE_JSON_LOG_OUTPUT"))
+                        {
+                            Log.Verbose("Using console log output with JSON formatter");
+                            serilogConfiguration.WriteTo.Console(formatter: new RenderedCompactJsonFormatter());
+                        }
+                        else
+                        {
+                            Log.Verbose("Using console log output with text formatter");
+                            serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(otlpEndpoint))
+                    {
+                        var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
+                            ? OtlpProtocol.HttpProtobuf
+                            : OtlpProtocol.Grpc;
+
+                        Log.Verbose("Using OpenTelemetry Protocol (OTLP) endpoint {OtlpEndpoint} with {Proctocol}, for Serilog", otlpEndpoint, protocol);
+                        serilogConfiguration.WriteTo.OpenTelemetry(options =>
+                        {
+                            //options.HttpMessageHandler = new SocketsHttpHandler { ActivityHeadersPropagator = null };
+                            options.Protocol = protocol;
+                            options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
+                            options.Headers = GetSerilogSpecificOtelHeaders(context);
+                            options.ResourceAttributes = resourceBuilder.Build().Attributes.ToDictionary();
+                        });
                     }
                     else
                     {
-                        serilogConfiguration.WriteTo.Console(theme: AnsiConsoleTheme.Sixteen);
+                        Log.Verbose("OpenTelemetry Protocol (OTLP) endpoint not configured, using default Serilog configuration");
+                        serilogConfiguration
+                            .Enrich.WithProperty("namespace", serviceNamespace)
+                            .Enrich.WithProperty("application", application)
+                            .Enrich.WithProperty("team", team);
                     }
-                }
 
-                if (!string.IsNullOrEmpty(otlpEndpoint))
-                {
-                    var protocol = context.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"] == "http/protobuf"
-                        ? OtlpProtocol.HttpProtobuf
-                        : OtlpProtocol.Grpc;
-
-                    serilogConfiguration.WriteTo.OpenTelemetry(options =>
+                    var seqEndpoint = context.Configuration["SEQ_ENDPOINT"];
+                    if (!string.IsNullOrEmpty(seqEndpoint))
                     {
-                        options.Protocol = protocol;
-                        options.Endpoint = protocol == OtlpProtocol.HttpProtobuf ? $"{otlpEndpoint}/v1/logs" : otlpEndpoint;
-                        options.ResourceAttributes = resourceBuilder.Build().Attributes.ToDictionary();
-                    });
-                }
-                else
-                {
-                    serilogConfiguration
-                        .Enrich.WithProperty("namespace", serviceNamespace)
-                        .Enrich.WithProperty("application", application)
-                        .Enrich.WithProperty("team", team);
-                }
+                        Log.Verbose("Seq endpoint configured, using Seq for logging");
+                        serilogConfiguration.WriteTo.Seq(seqEndpoint);
+                    }
 
-                var seqEndpoint = context.Configuration["SEQ_ENDPOINT"];
-                if (!string.IsNullOrEmpty(seqEndpoint))
+                    IsSerilogConfigured = true;
+                });
+            }
+            else
+            {
+                builder.Services.AddLogging(logging =>
                 {
-                    serilogConfiguration.WriteTo.Seq(seqEndpoint);
-                }
+                    if (!string.IsNullOrEmpty(otlpEndpoint))
+                    {
+                        Log.Verbose("Using OpenTelemetry Protocol (OTLP) endpoint {OtlpEndpoint} for OpenTelemetry logging", otlpEndpoint);
 
-                IsSerilogConfigured = true;
-            });
+                        logging.AddOpenTelemetry(builderOptions =>
+                        {
+                            builderOptions.SetResourceBuilder(resourceBuilder);
+                            builderOptions.IncludeFormattedMessage = true;
+                            builderOptions.IncludeScopes = false;
+                            builderOptions.AddOtlpExporter();
+                        });
+                    }
+                });
+            }
         }
 
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracingBuilder =>
             {
                 if (!string.IsNullOrEmpty(appInsightsConnectionString))
+                {
+                    Log.Verbose("Application Insights connection string configured, using OpenTelemetry tracing exporter for Application Insights");
                     tracingBuilder.AddAzureMonitorTraceExporter(options =>
                     {
                         options.ConnectionString = appInsightsConnectionString;
@@ -100,34 +135,39 @@ internal static class ObservabilityConfiguration
                         // This is the same in the java sampler as well
                         //options.SamplingRatio = 0.1f;
                     });
+                }
 
                 if (!string.IsNullOrEmpty(otlpEndpoint))
+                {
+                    Log.Verbose("Using OpenTelemetry Protocol (OTLP) endpoint {OtlpEndpoint} for OpenTelemetry tracing", otlpEndpoint);
                     tracingBuilder.AddOtlpExporter();
-                
+                }
+
                 tracingBuilder
                     .SetResourceBuilder(resourceBuilder)
-                    .AddHttpClientInstrumentation()
                     .AddGrpcClientInstrumentation()
+                    .AddHttpClientInstrumentation()
                     .AddAspNetCoreInstrumentation(opt => opt.Filter = TraceEndpointsFilter);
             })
             .WithMetrics(metricsBuilder =>
             {
                 if (UsePrometheusEndpoint)
                 {
+                    Log.Verbose("Prometheus endpoint enabled, adding Prometheus exporter for OpenTelemetry metrics");
                     metricsBuilder.AddPrometheusExporter();
                 }
 
                 if (!string.IsNullOrEmpty(appInsightsConnectionString))
-                    metricsBuilder.AddAzureMonitorMetricExporter(options =>
-                    {
-                        options.ConnectionString = appInsightsConnectionString;
-                        // This is sampled by hashing the traceid with hash seed 5381
-                        // This is the same in the java sampler as well
-                        //options.SamplingRatio = 0.1f;
-                    });
-                
+                {
+                    Log.Verbose("Application Insights connection string configured, using OpenTelemetry metrics exporter for Application Insights");
+                    metricsBuilder.AddAzureMonitorMetricExporter(options => { options.ConnectionString = appInsightsConnectionString; });
+                }
+
                 if (!string.IsNullOrEmpty(otlpEndpoint))
+                {
+                    Log.Verbose("Using OpenTelemetry Protocol (OTLP) endpoint {OtlpEndpoint} for OpenTelemetry metrics", otlpEndpoint);
                     metricsBuilder.AddOtlpExporter();
+                }
 
                 metricsBuilder
                     .SetResourceBuilder(resourceBuilder)
@@ -138,6 +178,40 @@ internal static class ObservabilityConfiguration
             });
 
         return builder;
+    }
+
+    //private static bool FilterHttpRequestMessage(HttpRequestMessage request)
+    //{
+    //    try
+    //    {
+    //        var filter = !request.RequestUri.PathAndQuery.StartsWith("/opentelemetry");
+    //        Console.WriteLine("Filtering request {0} for OpenTelemetry, is filtered: {1}", request.RequestUri, filter);
+    //        return filter;
+    //    }
+    //    catch
+    //    {
+    //        return true;
+    //    }
+    //}
+
+    private static Dictionary<string, string> GetSerilogSpecificOtelHeaders(HostBuilderContext context)
+    {
+        var headerDictionary = new Dictionary<string, string>();
+        try
+        {
+            var headers = context.Configuration["OTEL_EXPORTER_OTLP_HEADERS"];
+            var apiKey = headers?.Split(";").FirstOrDefault(h => h.StartsWith("x-otlp-api-key"))?.Split("=")[1];
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                headerDictionary.Add("x-otlp-api-key", apiKey);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Verbose(e, "Error while reading OTEL_EXPORTER_OTLP_HEADERS: {Error}", e.Message);
+        }
+
+        return headerDictionary;
     }
 
     private static bool TraceEndpointsFilter(HttpContext httpContext)
