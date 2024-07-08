@@ -22,7 +22,7 @@ services:
       otel-collector:
         condition: service_started
   credit-api-dapr:
-    image: daprio/daprd:1.12.4-mariner
+    image: daprio/daprd:1.13.5-mariner
     command: ["./daprd",
      "-app-id", "credit-api",
      "-app-port", "8080",
@@ -54,7 +54,7 @@ services:
       otel-collector:
         condition: service_started
   booking-processor-dapr-1:
-    image: daprio/daprd:1.12.4-mariner
+    image: daprio/daprd:1.13.5-mariner
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "8080",
@@ -86,7 +86,7 @@ services:
       otel-collector:
         condition: service_started
   booking-processor-dapr-2:
-    image: daprio/daprd:1.12.4-mariner
+    image: daprio/daprd:1.13.5-mariner
     command: ["./daprd",
      "-app-id", "booking-processor",
      "-app-port", "8080",
@@ -117,7 +117,7 @@ services:
       otel-collector:
         condition: service_started
   interest-rate-api-dapr:
-    image: daprio/daprd:1.12.4-mariner
+    image: daprio/daprd:1.13.5-mariner
     command: ["./daprd",
      "-app-id", "interest-rate-api",
      "-app-port", "80",
@@ -152,7 +152,7 @@ services:
       otel-collector:
         condition: service_started
   currency-rate-api-dapr:
-    image: daprio/daprd:1.12.4-mariner
+    image: daprio/daprd:1.13.5-mariner
     command: ["./daprd",
      "-app-id", "currency-rate-api",
      "-app-port", "8080",
@@ -230,7 +230,7 @@ services:
       JVM_OPTS: "-Xms32M -Xmx64M"
 
   dashboard:
-    image: mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0.0-preview.5
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:8.0
     ports:
       - 18888:18888
       #- 4317:18889

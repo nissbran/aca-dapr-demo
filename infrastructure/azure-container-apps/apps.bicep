@@ -9,7 +9,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
   name: 'acrdapr${name}'
 }
 
-resource aca_env 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
+resource aca_env 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: 'acaenv${name}'
 }
 
@@ -36,7 +36,7 @@ resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinit
 // }
 
 // Credit api -----------------------------------------------------------------
-resource credit_api 'Microsoft.App/containerApps@2023-05-01' = {
+resource credit_api 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'credit-api'
   location: location
   identity: {
@@ -131,7 +131,7 @@ resource credit_api_sb_assignment 'Microsoft.Authorization/roleAssignments@2022-
 }
 
 // Booking processor ----------------------------------------------------------
-resource booking_processor 'Microsoft.App/containerApps@2023-05-01' = {
+resource booking_processor 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'booking-processor'
   location: location
   identity: {
@@ -245,7 +245,7 @@ resource booking_processor_sb_assignment 'Microsoft.Authorization/roleAssignment
 }
 
 // Interest rate api ----------------------------------------------------------
-resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
+resource interest_rate_api 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'interest-rate-api'
   location: location
   identity: {
@@ -305,7 +305,7 @@ resource interest_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 // 
-resource currency_rate_api 'Microsoft.App/containerApps@2023-05-01' = {
+resource currency_rate_api 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'currency-rate-api'
   location: location
   identity: {

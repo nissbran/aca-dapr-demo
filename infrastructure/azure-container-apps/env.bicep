@@ -12,7 +12,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   }
 }
 
-resource loganalytics_workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+resource loganalytics_workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: 'logs${name}'
   location: location
   properties: {
@@ -33,7 +33,7 @@ resource appinsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: 'stoacc${name}'
   location: location
   sku: {
@@ -47,7 +47,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
-resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
+resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-05-01' = {
   parent: storageAccount
   name: 'default'
 }
@@ -89,7 +89,7 @@ resource sbSharedKey 'Microsoft.ServiceBus/namespaces/AuthorizationRules@2021-11
 }
 
 // Cosmos DB --------------------------------------------------
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-09-15' = {
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: 'cosmos${name}'
   location: location
   kind: 'GlobalDocumentDB'
@@ -113,7 +113,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-09-15' = {
   }
 }
 
-resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-09-15' = {
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
   parent: cosmos
   name: 'credits'
   properties: {
@@ -123,7 +123,7 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-09-15
   }
 }
 
-resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-09-15' = {
+resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
   parent: database
   name: 'creditstore'
   properties: {
@@ -139,7 +139,7 @@ resource creditstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contain
   }
 }
 
-resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-09-15' = {
+resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
   parent: database
   name: 'bookingstore'
   properties: {
@@ -155,7 +155,7 @@ resource bookingstore 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/contai
   }
 }
 
-resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2023-04-15' = {
+resource sqlRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2024-05-15' = {
   name: guid('sql-rw-role-definition', cosmos.id)
   parent: cosmos
   properties: {
@@ -226,7 +226,7 @@ resource aca_env 'Microsoft.App/managedEnvironments@2023-11-02-preview' = {
   }
 }
 
-resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
+resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   name: 'pubsub'
   parent: aca_env
   properties: {
@@ -250,7 +250,7 @@ resource pubsub_component 'Microsoft.App/managedEnvironments/daprComponents@2023
   }
 }
 
-resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
+resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   name: 'creditstore'
   parent: aca_env
   properties: {
@@ -278,7 +278,7 @@ resource creditstore_component 'Microsoft.App/managedEnvironments/daprComponents
   }
 }
 
-resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
+resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   name: 'bookingstore'
   parent: aca_env
   properties: {
@@ -305,7 +305,7 @@ resource bookingstore_component 'Microsoft.App/managedEnvironments/daprComponent
   }
 }
 
-resource keyvault_component 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
+resource keyvault_component 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   name: 'kv-secretstore'
   parent: aca_env
   properties: {
@@ -323,47 +323,47 @@ resource keyvault_component 'Microsoft.App/managedEnvironments/daprComponents@20
 
 // Aspire Dashboard --------------------------------------------
 // For direct access to logs, metrics, and traces.
-resource dashboard 'Microsoft.App/containerApps@2023-11-02-preview' = {
-  name: 'dashboard' 
-  location: location
-  properties: {
-    managedEnvironmentId: aca_env.id
-    configuration: {
-      activeRevisionsMode: 'single'
-      ingress: {
-        external: true
-        targetPort: 18888
-        additionalPortMappings: [
-          {
-            external: false
-            targetPort: 18889
-            exposedPort: 4317
-          }
-        ]
-      }
-    }
-    template: {
-      containers: [
-        {
-          image: 'mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0.0-preview.5'
-          name: 'dashboard'
-          resources:{
-            cpu: json('.25')
-            memory: '.5Gi'
-          }
-          env: [
-            {
-              name: 'DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS'
-              value: 'true'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-        rules: []
-      }
-    }
-  }
-}
+// resource dashboard 'Microsoft.App/containerApps@2024-03-01' = {
+//   name: 'dashboard' 
+//   location: location
+//   properties: {
+//     managedEnvironmentId: aca_env.id
+//     configuration: {
+//       activeRevisionsMode: 'single'
+//       ingress: {
+//         external: true
+//         targetPort: 18888
+//         additionalPortMappings: [
+//           {
+//             external: false
+//             targetPort: 18889
+//             exposedPort: 4317
+//           }
+//         ]
+//       }
+//     }
+//     template: {
+//       containers: [
+//         {
+//           image: 'mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0.0-preview.5'
+//           name: 'dashboard'
+//           resources:{
+//             cpu: json('.25')
+//             memory: '.5Gi'
+//           }
+//           env: [
+//             {
+//               name: 'DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS'
+//               value: 'true'
+//             }
+//           ]
+//         }
+//       ]
+//       scale: {
+//         minReplicas: 1
+//         maxReplicas: 1
+//         rules: []
+//       }
+//     }
+//   }
+// }
