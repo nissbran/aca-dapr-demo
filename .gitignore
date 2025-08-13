@@ -27,6 +27,11 @@ tools
 [Oo]bj/
 [Pp]ackages/
 
+# Go binaries
+src/go/*/credit-api
+src/go/*/booking-processor
+src/go/*/interest-rate-api
+
 # Apple directory
 .DS_Store
 
