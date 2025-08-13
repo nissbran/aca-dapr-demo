@@ -22,7 +22,7 @@ func main() {
 	address := fmt.Sprintf(":%v", port)
 	service := daprd.NewService(address)
 
-	if err := service.AddTopicEventHandler(bookingSub, eventHandler); err != nil {
+	if err := service.AddTopicEventHandler(bookingSub1, eventHandler); err != nil {
 		log.Fatalf("error adding topic subscription: %v", err)
 	}
 
