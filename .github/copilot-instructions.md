@@ -4,6 +4,8 @@ This is project is a Demo app showcasing Dapr in both Go lang, .NET and Java. Th
 
 ## Folder Structure
 
+- `/docs`: Contains documentation for the project, including API specifications and user guides.
+- `/dapr`: Contains Dapr related files, such as configuration files for Dapr components and pub/sub.
 - `/src`: Contains the source code the applications
 - `/src/go`: Contains the Go application source code.
 - `/src/dotnet`: Contains the .NET application source code.
