@@ -5,7 +5,7 @@ Prerequisites
 * .NET 8 SDK
 * Azure Cli
 * Docker
-* Dapr Cli (1.12 or higher)
+* Dapr Cli (1.15 or higher)
 * Go SDK (not needed if you only build the container)
 * Java SDK (not needed if you only build the container)
 

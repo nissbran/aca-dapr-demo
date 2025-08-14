@@ -10,7 +10,7 @@ var bookingEventSub = &common.Subscription{
 	Priority:   2,
 }
 
-var bookingSub = &common.Subscription{
+var bookingSub1 = &common.Subscription{
 	PubsubName: "pubsub",
 	Topic:      "bookings",
 	Route:      "/booking",
@@ -18,7 +18,7 @@ var bookingSub = &common.Subscription{
 	Priority:   1,
 }
 
-var bookingSub = &common.Subscription{
+var bookingSub2 = &common.Subscription{
 	PubsubName: "pubsub",
 	Topic:      "bookings",
 	Route:      "/booking",
