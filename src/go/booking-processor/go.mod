@@ -6,7 +6,7 @@ require github.com/dapr/go-sdk v1.10.0
 
 require (
 	github.com/dapr/dapr v1.13.0-rc.7 // indirect
-	github.com/go-chi/chi/v5 v5.0.12 // indirect
+	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
